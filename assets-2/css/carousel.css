@@ -98,12 +98,10 @@ body {
 
 .featurette-image-right {
   height: 240px;
-  float: right;
 }
 
 .featurette-image-left {
   height: 240px;
-  float: left;
 }
 
 .vertical-center {
@@ -122,4 +120,8 @@ br {
 .left-featurette .featurette-heading,
 .left-featurette .lead {
   display: inline;
+}
+
+.featurette-heading {
+  display: inline-block;
 }
