@@ -129,11 +129,11 @@ var G;
 	// Metrics and Tracking Configuration
 	var DB_NAME = "telemetry";
 
-	var GOLD_TYPES = { // Gold wall border definitions
-		"deadends": [3],
-		"corridors": [2],
-		// "corners": [2], // TODO: Fix me
-		"intersections": [0, 1]
+	var GOLD_TYPES = { // Gold wall border definitions. Uses binary to represent walls
+		"deadends": [7, 11, 13, 14],
+		"corridors": [5, 10],
+		"corners": [3, 6, 9, 12],
+		"intersections": [0, 1, 2, 4, 8]
 	}
 	var gold_type = Object.keys(GOLD_TYPES)[PS.random(Object.keys(GOLD_TYPES).length) - 1];
 
@@ -224,16 +224,16 @@ var G;
 	var wallCount = function(x, y) {
 		var walls = 0;
 		if (getMapVal(x - 1, y) == MAP_WALL) {
-			walls++;
-		}
-		if (getMapVal(x + 1, y) == MAP_WALL) {
-			walls++;
+			walls += 1;
 		}
 		if (getMapVal(x, y - 1) == MAP_WALL) {
-			walls++;
+			walls += 2;
+		}
+		if (getMapVal(x + 1, y) == MAP_WALL) {
+			walls += 4;
 		}
 		if (getMapVal(x, y + 1) == MAP_WALL) {
-			walls++;
+			walls += 8;
 		}
 		return walls;
 	}
