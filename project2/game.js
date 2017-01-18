@@ -128,25 +128,22 @@ var G;
 		return walls;
 	}
 
-	var placeGold = function(wallCounts) {
-		var validPlacements = [];
-		for (var i = 0; i < map.width; i++) {
-			for (var j = 0; j < map.height; j++) {
-				if (getMapVal(i, j) == MAP_FLOOR && wallCounts.includes(wallCount(i, j))) {
-					validPlacements.push(i + j * map.width);
-				}
-			}
-		}
-
-    for (var gold_placed = 0; gold_placed < GOLD_MAX; gold_placed++) {
-      if (len(validPlacements) == 0) break;
-      // Splice(index, 1) removes a value at index and returns the value
-			map.data[validPlacements.splice(PS.random(validPlacements.length) - 1, 1)] = MAP_GOLD;
-			gold_placed++;
+  // Randomly place 10 gold
+  var validPlacements = [];
+  for (var i = 0; i < map.width; i++) {
+    for (var j = 0; j < map.height; j++) {
+      if (getMapVal(i, j) == MAP_FLOOR && GOLD_TYPES.intersections.includes(wallCount(i, j))) {
+        validPlacements.push(i + j * map.width);
+      }
     }
-	}
+  }
 
-	placeGold(GOLD_TYPES.intersections);
+  for (var gold_placed = 0; gold_placed < GOLD_MAX; gold_placed++) {
+    if (len(validPlacements) == 0) break;
+    // Splice(index, 1) removes a value at index and returns the value
+    map.data[validPlacements.splice(PS.random(validPlacements.length) - 1, 1)] = MAP_GOLD;
+    gold_placed++;
+  }
 
 	// Randomly place an actor
 	var randomPlace;
