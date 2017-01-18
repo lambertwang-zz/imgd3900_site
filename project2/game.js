@@ -98,12 +98,19 @@ var G;
 			// Pops the top edge from the queue
 			var edge = queue.edges.shift();
 			queue.edge_ids.splice(queue.edge_ids.indexOf(edge.id), 1);
-			// Check if edge is redundant wtherwise add the edge
-			if (!added_nodes.includes(edge.src)) {
+			/**
+			 * Check if edge source and destination nodes are already added to the tree
+			 * If edge is not redundant, we can add a new node to the tree 
+			 * and continue building the mst and mst distance
+			 */
+			if (added_nodes.includes(edge.src)) {
+				if (added_nodes.includes(edge.dst)) {
+					return;
+				} else {
+					addToQueue(graph.nodes[edge.dst]);
+				}
+			} else {
 				addToQueue(graph.nodes[edge.src]);
-			}
-			if (!added_nodes.includes(edge.dst)) {
-				addToQueue(graph.nodes[edge.dst]);
 			}
 			
 			mst.push(edge);
