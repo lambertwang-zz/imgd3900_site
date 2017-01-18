@@ -33,6 +33,7 @@ var G;
 	var SOUND_WIN = "fx_tada"; // win sound
 	var SOUND_ERROR = "fx_uhoh"; // error sound
 
+	var MAP_UNDEFINED = -1; // void
 	var MAP_WALL = 0; // wall
 	var MAP_FLOOR = 1; // floor
 	var MAP_GOLD = 2; // floor + gold
@@ -88,12 +89,58 @@ var G;
 		]
 	};
 
-	// Remove gold from map (We will be placing it ourselves)
-	for (var i; i < map.data.length; i++) {
-		if (map.data[i] == MAP_GOLD) {
-			map.data[i] == MAP_FLOOR;
+	var removeAllGold = function() {
+		// Remove gold from map (We will be placing it ourselves)
+		for (var i = 0; i < map.data.length; i++) {
+			if (map.data[i] == MAP_GOLD) {
+				map.data[i] = MAP_FLOOR;
+			}
 		}
 	}
+
+	var getMapVal = function(x, y) {
+		if (x < 0 || y < 0 || x >= map.width || y >= map.height) {
+			return MAP_UNDEFINED;
+		}
+		return map.data[x + y * map.width];
+	}
+
+	var wallCount = function(x, y) {
+		var walls = 0;
+		if (getMapVal(x - 1, y) == MAP_WALL) {
+			walls ++;
+		}
+		if (getMapVal(x + 1, y) == MAP_WALL) {
+			walls ++;
+		}
+		if (getMapVal(x, y - 1) == MAP_WALL) {
+			walls ++;
+		}
+		if (getMapVal(x, y + 1) == MAP_WALL) {
+			walls ++;
+		}
+		return walls;
+	}
+
+	var placeIntoCorners = function() {
+		var corners = [];
+		for (var i = 0; i < map.width; i++) {
+			for (var j = 0; j < map.height; j++) {
+				if (getMapVal(i, j) == MAP_FLOOR && wallCount(i, j) == 3) {
+					corners.push(i + j * map.width);
+				}
+			}
+		}
+
+		var gold_placed = 0;
+		console.log(corners);
+		while (gold_placed < 10 && corners.length > 0) {
+			map.data[corners.splice(Math.floor(Math.random() * corners.length), 1)] = MAP_GOLD;
+			gold_placed++;
+		}
+	}
+
+	placeIntoCorners();
 
 	// These two variables control the initial location of the actor
 	var actorX; // initial x-pos of actor sprite
@@ -196,10 +243,6 @@ var G;
 		init : function () {
 			var len, i, x, y, val, color;
 
-			PS.dbInit("test1");
-			PS.dbEvent("test1", "test data", 1);
-			PS.dbSend("test1", "lwang5");
-
 			// Establish grid size
 			// This should always be done FIRST, before any other initialization!
 
@@ -208,6 +251,9 @@ var G;
 			PS.border( PS.ALL, PS.ALL, 0 ); // no bead borders
 
 			// Locate positions of actor and exit, count gold pieces, draw map
+
+			removeAllGold();
+			placeIntoCorners();
 
 			gold_count = 0;
 			actorX = exitX = -1; // mark as not found
