@@ -60,31 +60,33 @@ var G;
 			}
 		}
 
-		// Then add edges to each node
+		// Create a node for each gold piece
 		for (var i = 0; i < gold_locations.length; i++) {
 			graph.nodes.push({ id: i, edges: [] });
 		}
+		// Add edges to each node
 		for (var edge of graph.edges) {
 			graph.nodes[edge.src].edges.push(edge);
 			graph.nodes[edge.dst].edges.push(edge);
 		}
 
-		// A qeueu of edges to be expressed
+		// A queue of edges to be expressed
 		var queue = {
-			edgeIds: [],
+			edge_ids: [],
 			edges: []
 		};
+		// Track the total graph size and the included edges
 		var dist = 0;
+		var mst = [];
 
 		var added_nodes = [];
 
-		var mst = [];
 		var addToQueue = function(node) {
 			added_nodes.push(node.id);
 			for (var edge of node.edges) {
-				if (!queue.edgeIds.includes(edge.id)) {
+				if (!queue.edge_ids.includes(edge.id)) {
 					queue.edges.push(edge);
-					queue.edgeIds.push(edge.id);
+					queue.edge_ids.push(edge.id);
 				}
 			}
 			queue.edges.sort(function(edge) {
@@ -119,9 +121,9 @@ var G;
 		return dist;
 	}
 
-	var seed = Math.random() * (1 << 14); // 14 bits of cryptographic security
+	var seed = Math.random() * 10000;
 	for (var i = 0; i < seed; i++) {
-		PS.random(2);
+		PS.random(10000);
 	}
 
 	// Metrics and Tracking Configuration
