@@ -162,8 +162,6 @@ var G;
 	var MAP_ACTOR = 3; // floor + actor
 	var MAP_EXIT = 4; // floor + exit
 
-	var MAP_ID = 0; // map number
-
 	// Variables
 	var id_sprite; // actor sprite id
 	var id_path; // pathmap id for pathfinder
