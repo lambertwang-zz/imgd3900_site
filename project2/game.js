@@ -114,35 +114,36 @@ var G;
 	var wallCount = function(x, y) {
 		var walls = 0;
 		if (getMapVal(x - 1, y) == MAP_WALL) {
-			walls ++;
+			walls++;
 		}
 		if (getMapVal(x + 1, y) == MAP_WALL) {
-			walls ++;
+			walls++;
 		}
 		if (getMapVal(x, y - 1) == MAP_WALL) {
-			walls ++;
+			walls++;
 		}
 		if (getMapVal(x, y + 1) == MAP_WALL) {
-			walls ++;
+			walls++;
 		}
 		return walls;
 	}
 
 	var placeGold = function(wallCounts) {
-		var corners = [];
+		var validPlacements = [];
 		for (var i = 0; i < map.width; i++) {
 			for (var j = 0; j < map.height; j++) {
 				if (getMapVal(i, j) == MAP_FLOOR && wallCounts.includes(wallCount(i, j))) {
-					corners.push(i + j * map.width);
+					validPlacements.push(i + j * map.width);
 				}
 			}
 		}
 
-		var gold_placed = 0;
-		while (gold_placed < GOLD_MAX && corners.length > 0) {
-			map.data[corners.splice(PS.random(corners.length) - 1, 1)] = MAP_GOLD;
+    for (var gold_placed = 0; gold_placed < GOLD_MAX; gold_placed++) {
+      if (len(validPlacements) == 0) break;
+      // Splice(index, 1) removes a value at index and returns the value
+			map.data[validPlacements.splice(PS.random(validPlacements.length) - 1, 1)] = MAP_GOLD;
 			gold_placed++;
-		}
+    }
 	}
 
 	placeGold(GOLD_TYPES.intersections);
