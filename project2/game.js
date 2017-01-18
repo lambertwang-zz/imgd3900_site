@@ -95,18 +95,15 @@ var G;
 		}
 
 		var express = function() {
-			// Remove top edge from queue
-			var edge = queue.edges.splice(0, 1)[0];
-			queue.edgeIds.splice(queue.edgeIds.indexOf(edge.id), 1);
+			// Pops the top edge from the queue
+			var edge = queue.edges.shift();
+			queue.edge_ids.splice(queue.edge_ids.indexOf(edge.id), 1);
 			// Check if edge is redundant wtherwise add the edge
-			if (added_nodes.includes(edge.src)) {
-				if (added_nodes.includes(edge.dst)) {
-					return;
-				} else {
-					addToQueue(graph.nodes[edge.dst]);
-				}
-			} else {
+			if (!added_nodes.includes(edge.src)) {
 				addToQueue(graph.nodes[edge.src]);
+			}
+			if (!added_nodes.includes(edge.dst)) {
+				addToQueue(graph.nodes[edge.dst]);
 			}
 			
 			mst.push(edge);
