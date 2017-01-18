@@ -14,18 +14,59 @@ var G;
 ( function () {
 	"use strict";
 
+	var travelingSalesman = function(map, gold_locations, id_path) {
+		// Construct a graph
+
+		// list of edges
+		var edges = [];
+
+		for (var i = 0; i < gold_locations.length - 1; i++) {
+			for (var j = i + 1; j < gold_locations.length; j++) {
+				var path = PS.pathFind(
+					id_path, 
+					gold_locations[i][0], 
+					gold_locations[i][1], 
+					gold_locations[j][0], 
+					gold_locations[j][1] );
+
+				// Check to make sure path does not contain other gold pieces
+				var redundant = false;
+				for (var k = 1; k < path.length - 1; k++) {
+					if (getMapVal(path[k][0], path[k][1]) == MAP_GOLD) {
+						redundant = true;
+						break;
+					}
+				}
+
+				if (!redundant) {
+					edges.push({
+						src: i, 
+						dst: j, 
+						len: path.length
+					});
+				}
+			}
+		}
+
+		var dist = 0;
+		return dist;
+	}
+
 	var seed = Math.random() * (1 << 14); // 14 bits of cryptographic security
 	for (var i = 0; i < seed; i++) {
 		PS.random(2);
 	}
 
 	// Metrics and Tracking Configuration
-	var GOLD_TYPES = { // Wall border definitions
-		"dead ends": [3],
+	var DB_NAME = "telemetry";
+
+	var GOLD_TYPES = { // Gold wall border definitions
+		"deadends": [3],
 		"corridors": [2],
-		"corners": [2], // TODO: Fix me
+		// "corners": [2], // TODO: Fix me
 		"intersections": [0, 1]
 	}
+	var gold_type = Object.keys(GOLD_TYPES)[PS.random(Object.keys(GOLD_TYPES).length) - 1];
 
 	var GOLD_MAX = 10; // maximum gold
 
@@ -128,22 +169,24 @@ var G;
 		return walls;
 	}
 
-  // Randomly place 10 gold
-  var validPlacements = [];
-  for (var i = 0; i < map.width; i++) {
-    for (var j = 0; j < map.height; j++) {
-      if (getMapVal(i, j) == MAP_FLOOR && GOLD_TYPES.intersections.includes(wallCount(i, j))) {
-        validPlacements.push(i + j * map.width);
-      }
-    }
-  }
+	// Randomly place 10 gold
+	var validPlacements = [];
+	for (var i = 0; i < map.width; i++) {
+		for (var j = 0; j < map.height; j++) {
+			if (getMapVal(i, j) == MAP_FLOOR && GOLD_TYPES[gold_type].includes(wallCount(i, j))) {
+				validPlacements.push(i + j * map.width);
+			}
+		}
+	}
 
-  for (var gold_placed = 0; gold_placed < GOLD_MAX; gold_placed++) {
-    if (len(validPlacements) == 0) break;
-    // Splice(index, 1) removes a value at index and returns the value
-    map.data[validPlacements.splice(PS.random(validPlacements.length) - 1, 1)] = MAP_GOLD;
-    gold_placed++;
-  }
+	var gold_locations = [];
+	for (var gold_placed = 0; gold_placed < GOLD_MAX; gold_placed++) {
+		if (validPlacements.length == 0) break;
+		// Splice(index, 1) removes a value at index and returns the value
+		var new_location = validPlacements.splice(PS.random(validPlacements.length) - 1, 1);
+		map.data[new_location] = MAP_GOLD;
+		gold_locations.push([new_location % map.width, Math.floor(new_location / map.width)]);
+	}
 
 	// Randomly place an actor
 	var randomPlace;
@@ -230,12 +273,15 @@ var G;
 		}
 
 		// If exit is ready and actor has reached it, end game
-
 		else if ( exit_ready && ( actorX === exitX ) && ( actorY === exitY ) ) {
 			PS.timerStop( id_timer ); // stop movement timer
 			PS.statusText( "You escaped with " + gold_found + " gold!" );
 			PS.audioPlay( SOUND_WIN );
 			won = true;
+			PS.dbEvent(DB_NAME, "completion", true);
+			// PS.dbSend(DB_NAME, "lwang5");
+			// PS.dbSend(DB_NAME, "jctblackman");
+			window.removeEventListener("beforeunload");
 			return;
 		}
 
@@ -265,6 +311,19 @@ var G;
 			PS.gridSize( map.width, map.height );
 			PS.gridColor( COLOR_BG ); // grid background color
 			PS.border( PS.ALL, PS.ALL, 0 ); // no bead borders
+
+			// Initialize database and pass maze construction parameters
+			PS.dbInit(DB_NAME);
+			PS.dbEvent(DB_NAME, "gold_type", gold_type);
+
+			// Log and send if the window is closed
+			window.addEventListener("beforeunload", function(event) {
+				if (!won) {
+					PS.dbEvent(DB_NAME, "completion", false);
+					// PS.dbSend(DB_NAME, "lwang5");
+					// PS.dbSend(DB_NAME, "jctblackman");
+				}
+			});
 
 			// Locate positions of actor and exit, count gold pieces, draw map
 
@@ -296,6 +355,8 @@ var G;
 						}
 						actorX = x;
 						actorY = y;
+						PS.dbEvent(DB_NAME, "actorX", actorX);
+						PS.dbEvent(DB_NAME, "actorY", actorY);
 						map.data[ ( y * map.height ) + x ] = MAP_FLOOR; // change actor to floor
 						PS.color( x, y, COLOR_FLOOR );
 					}
@@ -307,6 +368,8 @@ var G;
 						}
 						exitX = x;
 						exitY = y;
+						PS.dbEvent(DB_NAME, "exitX", exitX);
+						PS.dbEvent(DB_NAME, "exitY", exitY);
 						map.data[ ( y * map.height ) + x ] = MAP_FLOOR; // change exit to floor
 						PS.color( x, y, COLOR_FLOOR );
 					}
@@ -336,6 +399,9 @@ var G;
 			// for use by pathfinder
 
 			id_path = PS.pathMap( map );
+
+			// Now that we have our path map, we can compute the traveling salesman problem
+			travelingSalesman(map, gold_locations, id_path);
 
 			// Start the timer function that moves the actor
 			// Run at 10 frames/sec (every 6 ticks)
