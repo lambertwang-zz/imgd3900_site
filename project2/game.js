@@ -14,12 +14,23 @@ var G;
 ( function () {
 	"use strict";
 
-	var travelingSalesman = function(map, gold_locations, id_path) {
-		// Construct a graph
+	var unloadEvent = function(event) {
+		if (!won) {
+			PS.dbEvent(DB_NAME, "completion", false);
+			PS.dbSend(DB_NAME, "lwang5");
+			PS.dbSend(DB_NAME, "jctblackman");
+		}
+	};
 
-		// list of edges
-		var edges = [];
+	var primsAlgorithm = function(map, gold_locations, id_path) {
+		// Construct the graph first
+		var graph = {
+			nodes: [],
+			edges: []
+		};
 
+
+		// First compute the edges
 		for (var i = 0; i < gold_locations.length - 1; i++) {
 			for (var j = i + 1; j < gold_locations.length; j++) {
 				var path = PS.pathFind(
@@ -39,7 +50,8 @@ var G;
 				}
 
 				if (!redundant) {
-					edges.push({
+					graph.edges.push({
+						id: i * gold_locations.length + j,
 						src: i, 
 						dst: j, 
 						len: path.length
@@ -48,7 +60,62 @@ var G;
 			}
 		}
 
+		// Then add edges to each node
+		for (var i = 0; i < gold_locations.length; i++) {
+			graph.nodes.push({ id: i, edges: [] });
+		}
+		for (var edge of graph.edges) {
+			graph.nodes[edge.src].edges.push(edge);
+			graph.nodes[edge.dst].edges.push(edge);
+		}
+
+		// A qeueu of edges to be expressed
+		var queue = {
+			edgeIds: [],
+			edges: []
+		};
 		var dist = 0;
+
+		var added_nodes = [];
+
+		var mst = [];
+		var addToQueue = function(node) {
+			added_nodes.push(node.id);
+			for (var edge of node.edges) {
+				if (!queue.edgeIds.includes(edge.id)) {
+					queue.edges.push(edge);
+					queue.edgeIds.push(edge.id);
+				}
+			}
+			queue.edges.sort(function(edge) {
+				return edge.len;
+			});
+		}
+
+		var express = function() {
+			// Remove top edge from queue
+			var edge = queue.edges.splice(0, 1)[0];
+			queue.edgeIds.splice(queue.edgeIds.indexOf(edge.id), 1);
+			// Check if edge is redundant wtherwise add the edge
+			if (added_nodes.includes(edge.src)) {
+				if (added_nodes.includes(edge.dst)) {
+					return;
+				} else {
+					addToQueue(graph.nodes[edge.dst]);
+				}
+			} else {
+				addToQueue(graph.nodes[edge.src]);
+			}
+			
+			mst.push(edge);
+			dist += edge.len;
+		}
+
+		addToQueue(graph.nodes[0]);
+		while (queue.edges.length > 0) {
+			express();
+		}
+
 		return dist;
 	}
 
@@ -187,6 +254,9 @@ var G;
 		map.data[new_location] = MAP_GOLD;
 		gold_locations.push([new_location % map.width, Math.floor(new_location / map.width)]);
 	}
+	gold_locations.sort(function(a, b) {
+		return (a[0] + a[1] * map.width) > (b[0] + b[1] * map.width)
+	});
 
 	// Randomly place an actor
 	var randomPlace;
@@ -279,9 +349,9 @@ var G;
 			PS.audioPlay( SOUND_WIN );
 			won = true;
 			PS.dbEvent(DB_NAME, "completion", true);
-			// PS.dbSend(DB_NAME, "lwang5");
-			// PS.dbSend(DB_NAME, "jctblackman");
-			window.removeEventListener("beforeunload");
+			PS.dbSend(DB_NAME, "lwang5");
+			PS.dbSend(DB_NAME, "jctblackman");
+			window.removeEventListener("beforeunload", unloadEvent);
 			return;
 		}
 
@@ -312,18 +382,8 @@ var G;
 			PS.gridColor( COLOR_BG ); // grid background color
 			PS.border( PS.ALL, PS.ALL, 0 ); // no bead borders
 
-			// Initialize database and pass maze construction parameters
-			PS.dbInit(DB_NAME);
-			PS.dbEvent(DB_NAME, "gold_type", gold_type);
-
 			// Log and send if the window is closed
-			window.addEventListener("beforeunload", function(event) {
-				if (!won) {
-					PS.dbEvent(DB_NAME, "completion", false);
-					// PS.dbSend(DB_NAME, "lwang5");
-					// PS.dbSend(DB_NAME, "jctblackman");
-				}
-			});
+			window.addEventListener("beforeunload", unloadEvent);
 
 			// Locate positions of actor and exit, count gold pieces, draw map
 
@@ -355,8 +415,6 @@ var G;
 						}
 						actorX = x;
 						actorY = y;
-						PS.dbEvent(DB_NAME, "actorX", actorX);
-						PS.dbEvent(DB_NAME, "actorY", actorY);
 						map.data[ ( y * map.height ) + x ] = MAP_FLOOR; // change actor to floor
 						PS.color( x, y, COLOR_FLOOR );
 					}
@@ -368,8 +426,6 @@ var G;
 						}
 						exitX = x;
 						exitY = y;
-						PS.dbEvent(DB_NAME, "exitX", exitX);
-						PS.dbEvent(DB_NAME, "exitY", exitY);
 						map.data[ ( y * map.height ) + x ] = MAP_FLOOR; // change exit to floor
 						PS.color( x, y, COLOR_FLOOR );
 					}
@@ -400,8 +456,18 @@ var G;
 
 			id_path = PS.pathMap( map );
 
-			// Now that we have our path map, we can compute the traveling salesman problem
-			travelingSalesman(map, gold_locations, id_path);
+			// Initialize Database
+			PS.dbInit(DB_NAME);
+			// Now that we have our path map, we can compute the minimum spanning tree distance
+			var mst_distance = primsAlgorithm(map, gold_locations, id_path);
+			// Initialize database and pass maze construction parameters
+			PS.dbEvent(DB_NAME, 
+				"gold_type", gold_type, 
+				"mst_distance", mst_distance,
+				"actorX", actorX,
+				"actorY", actorY,
+				"exitX", exitX,
+				"exitY", exitY);
 
 			// Start the timer function that moves the actor
 			// Run at 10 frames/sec (every 6 ticks)
