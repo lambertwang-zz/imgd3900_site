@@ -17,8 +17,8 @@ var G;
 	var unloadEvent = function(event) {
 		if (!won) {
 			PS.dbEvent(DB_NAME, "completion", false);
-			PS.dbSend(DB_NAME, "lwang5");
-			PS.dbSend(DB_NAME, "jctblackman");
+			// PS.dbSend(DB_NAME, "lwang5");
+			// PS.dbSend(DB_NAME, "jctblackman");
 		}
 	};
 
@@ -353,8 +353,8 @@ var G;
 			PS.audioPlay( SOUND_WIN );
 			won = true;
 			PS.dbEvent(DB_NAME, "completion", true);
-			PS.dbSend(DB_NAME, "lwang5");
-			PS.dbSend(DB_NAME, "jctblackman");
+			// PS.dbSend(DB_NAME, "lwang5");
+			// PS.dbSend(DB_NAME, "jctblackman");
 			window.removeEventListener("beforeunload", unloadEvent);
 			return;
 		}
