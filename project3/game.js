@@ -14,15 +14,6 @@ var G;
 ( function () {
 	"use strict";
 
-	// Log database if page unloaded
-	var unloadEvent = function(event) {
-		if (!won) {
-			PS.dbEvent(DB_NAME, "completion", false);
-			// PS.dbSend(DB_NAME, "lwang5");
-			// PS.dbSend(DB_NAME, "jctblackman");
-		}
-	};
-
 	// Takes h (0-360), s(0-1), and v(0-1)
 	// Returns an int containing an RGB value.
 	var hsvToRgb = function(h, s, v) {
@@ -56,7 +47,6 @@ var G;
 			Math.floor((rgb[2] + m) * 255);
 	}
 
-
 	var MAX_WIDTH = 10;
 	var MAX_HEIGHT = 10;
 	var DB_NAME = "three_bead_telemetry";
@@ -65,14 +55,16 @@ var G;
 		BACKGROUND_COLOR: hsvToRgb(0, 0, .1),
 		BEAD_COLOR: hsvToRgb(0, 0, 0),
 		FADE_COLOR: hsvToRgb(0, 0, .5),
-		FADE_TIME: 30,
+		FADE_TIME: 50,
 		STATUS_COLOR: 0xffffff,
 		HOVER: {
-			COLOR: PS.WHITE,
+			COLOR: hsvToRgb(0, 0, 1),
 			COLOR_ACTIVE: hsvToRgb(0, .8, 1),
 			THICKNESS: 2,
 			THICKNESS_ACTIVE: 4
-		}
+		},
+		CLEAR_DELAY: 5,
+		LEVEL_DELAY: 10
 	}
 
 	var BEAD_TYPES = [
@@ -80,47 +72,198 @@ var G;
 			color: hsvToRgb(0, .8, 1),
 			glyph: 0x25A0,
 		},
-		{ // Green Hex
-			color: hsvToRgb(120, .5, 1),
-			glyph: 0x2B22,
-		},
 		{ // Blue Rhombus
-			color: hsvToRgb(240, .7, 1),
+			color: hsvToRgb(240, .8, 1),
 			glyph: 0x25C6,
-		},
-		{ // Purple Cross
-			color: hsvToRgb(300, .7, 1),
-			glyph: 0x2756,
 		},
 		{ // Orange Triangle
 			color: hsvToRgb(30, 1, 1),
 			glyph: 0x25BC,
 		},
 		{ // Cyan Circle
-			color: hsvToRgb(180, .8, 1),
+			color: hsvToRgb(200, .8, 1),
 			glyph: 0x25CF,
 		},
 		{ // Pink Heart
-			color: hsvToRgb(330, .7, 1),
+			color: hsvToRgb(330, .6, 1),
 			glyph: 0x2665,
+		},
+		{ // Green Hex
+			color: hsvToRgb(110, .7, 1),
+			glyph: 0x2B22,
 		},
 		{ // Yellow Star
 			color: hsvToRgb(60, 1, 1),
 			glyph: 0x2605,
+		},
+		{ // Purple Cross
+			color: hsvToRgb(290, .8, 1),
+			glyph: 0x2756,
+		},
+		{ // White snowflake
+			color: hsvToRgb(0, 0, 1),
+			glyph: 0x2746,
+		},
+		{ // Teal Music Notes
+			color: hsvToRgb(160, .8, 1),
+			glyph: 0x266B
 		}
 	]
 
+	var COMPLETION_TEXT = [
+		"Good job!",
+		"Well done!",
+		"Nice work!",
+		"You're an expert!"
+	];
+
+	var LEVEL_DATA = [
+		{
+			width: 4,
+			height: 1,
+			clearToNext: 3,
+			activeTypes: 5,
+			customMap: [[0], [0], [1], [0]],
+			statusText: "Touch and drag cells to swap them!"
+		},
+		{
+			width: 2,
+			height: 3,
+			clearToNext: 6,
+			activeTypes: 5,
+			customMap: [[2, 3, 2], [3, 2, 3]],
+			statusText: "Make cool combos!"
+		},
+		{
+			width: 6,
+			height: 6,
+			clearToNext: 20,
+			activeTypes: 5,
+			statusText: "You're on your own!"
+		},
+		{
+			width: 7,
+			height: 7,
+			clearToNext: 40,
+			activeTypes: 5,
+			statusText: "Level 2"
+		},
+		{
+			width: 7,
+			height: 7,
+			clearToNext: 60,
+			activeTypes: 6,
+			statusText: "Level 3"
+		},
+		{
+			width: 8,
+			height: 8,
+			clearToNext: 80,
+			activeTypes: 7,
+			statusText: "Level 4"
+		},
+		{
+			width: 8,
+			height: 8,
+			clearToNext: 100,
+			activeTypes: 8,
+			statusText: "Level 5"
+		},
+		{
+			width: 8,
+			height: 8,
+			clearToNext: 150,
+			activeTypes: 8,
+			statusText: "Level 6"
+		},
+		{
+			width: 8,
+			height: 8,
+			clearToNext: 200,
+			activeTypes: 9,
+			statusText: "Level 7"
+		},
+		{
+			width: 9,
+			height: 9,
+			clearToNext: 300,
+			activeTypes: 9,
+			statusText: "Level 8"
+		},
+		{
+			width: 10,
+			height: 10,
+			clearToNext: 500,
+			activeTypes: 10,
+			statusText: "Endless Mode"
+		},
+	];
+
+	var height;
+	var width;
+	var activeTypes;
 	var cellMap = [];
+	var levelIndex = 0;
+	var currentLevel;
+	var score = 0;
+
+	// Lock the controls after matching to fade in new cells
+	var controlsLocked = 0; // Number of ticks to lock controls for
+
+	var loadLevel = function() {
+		if (levelIndex >= LEVEL_DATA.length) {
+			levelIndex = LEVEL_DATA.length - 1;
+		}
+		currentLevel = LEVEL_DATA[levelIndex];
+		width = currentLevel.width;
+		height = currentLevel.height;
+		activeTypes = currentLevel.activeTypes;
+		score = 0;
+		size(width, height);
+
+		PS.statusColor( STYLE.STATUS_COLOR );
+		PS.statusText(currentLevel.statusText);
+
+		if (currentLevel.customMap) {
+			cellMap = currentLevel.customMap;
+		}
+		drawCell(PS.ALL, PS.ALL);
+	}
+
+	// Handles resizing grid and map data
+	var size = function(width, height) {
+		PS.gridSize( width, height );
+		PS.gridColor( STYLE.BACKGROUND_COLOR ); // grid background color
+
+		PS.border( PS.ALL, PS.ALL, 0 ); // no bead borders
+		PS.borderColor ( PS.ALL, PS.ALL, STYLE.HOVER.COLOR );
+
+		PS.color( PS.ALL, PS.ALL, STYLE.BEAD_COLOR ); // Make all beads black
+		PS.alpha( PS.ALL, PS.ALL, 255 );
+
+		cellMap = [];
+		for (var i = 0; i < width; i++) {
+			cellMap.push([]);
+			for (var j = 0; j < height; j++) {
+				cellMap[i].push(-1);
+			}
+		}
+
+		fillRandom(PS.ALL, PS.ALL);
+	}
 
 	// Draws cell at (x, y)
 	// Accepts PS.ALL
 	var drawCell = function(x, y, fade = false) {
-		for (var i = (x == PS.ALL ? 0 : x); i < (x == PS.ALL ? MAX_WIDTH : x + 1); i++) {
-			for (var j = (y == PS.ALL ? 0 : y); j < (y == PS.ALL ? MAX_HEIGHT : y + 1); j++) {
-				var cell = BEAD_TYPES[cellMap[i][j]]
-				PS.glyph(i, j, cell.glyph);
-				PS.glyphColor(i, j, cell.color);
-
+		for (var i = (x == PS.ALL ? 0 : x); i < (x == PS.ALL ? width : x + 1); i++) {
+			for (var j = (y == PS.ALL ? 0 : y); j < (y == PS.ALL ? height : y + 1); j++) {
+				if (cellMap[i][j] == -1) {
+					PS.glyph(i, j, 0);
+				} else {
+					var cell = BEAD_TYPES[cellMap[i][j]]
+					PS.glyph(i, j, cell.glyph);
+					PS.glyphColor(i, j, cell.color);
+				}
 				if (fade) {
 					PS.fade(i, j, 0);
 					PS.color(i, j, STYLE.FADE_COLOR);
@@ -132,31 +275,151 @@ var G;
 	}
 
 	// Put a random cell in the space (x, y)
+	// Ensures the cell type placed is different from all neighbors
 	// Accepts PS.ALL
 	var fillRandom = function(x, y) {
-
-	}
-
-	// Handles resizing grid and map data
-	var size = function(width, height) {
-		PS.gridSize( width, height );
-
-		cellMap = [];
-		for (var i = 0; i < width; i++) {
-			cellMap.push([]);
-			for (var j = 0; j < height; j++) {
-				cellMap[i].push(PS.random(BEAD_TYPES.length) - 1);
+		for (var i = (x == PS.ALL ? 0 : x); i < (x == PS.ALL ? width : x + 1); i++) {
+			for (var j = (y == PS.ALL ? 0 : y); j < (y == PS.ALL ? height : y + 1); j++) {
+				var available = Array.apply(null, { length: activeTypes }).map(Number.call, Number);
+				// Check neighbors
+				if (i < width - 1 && available.includes(cellMap[i + 1][j])) {
+					available.splice(available.indexOf(cellMap[i + 1][j]), 1);
+				}
+				if (i > 0 && available.includes(cellMap[i - 1][j])) {
+					available.splice(available.indexOf(cellMap[i - 1][j]), 1);
+				}
+				if (j < height - 1 && available.includes(cellMap[i][j + 1])) {
+					available.splice(available.indexOf(cellMap[i][j + 1]), 1);
+				}
+				if (j > 0 && available.includes(cellMap[i][j - 1])) {
+					available.splice(available.indexOf(cellMap[i][j - 1]), 1);
+				}
+				cellMap[i][j] = available[PS.random(available.length) - 1];
+				drawCell(i, j, true);
 			}
 		}
 	}
 
-	var tick = function () {
-		// PS.gridSize(MAX_WIDTH++, MAX_HEIGHT++);
-	};
+
+	// Matching functions
+	var markedForClear = [];
+
+	var matchAll = function() {
+		for (var i = 0; i < width; i++) {
+			for (var j = 0; j < height; j++) {
+				match(i, j);
+			}
+		}
+		clear();
+	}
+
+	var match = function(x, y) {
+		var selfType = cellMap[x][y];
+		// Finds all horizontal and vertical matches involving cell at (x, y)
+		var checkCells = [x + y * width]
+		var horizontal = 1;
+		for (var i = x + 1; i < width && cellMap[i][y] == selfType; i++) {
+			horizontal++;
+			checkCells.push(i + y * width)
+		}
+		for (var i = x - 1; i >= 0 && cellMap[i][y] == selfType; i--) {
+			horizontal++;
+			checkCells.push(i + y * width)
+		}
+		if (horizontal >= 3) {
+			for (var to_add of checkCells) {
+				if (!markedForClear.includes(to_add)) {
+					markedForClear.push(to_add);
+				}
+			}
+		}
+
+		var checkCells = [x + y * width]
+		var vertical = 1;
+		for (var j = y + 1; j < height && cellMap[x][j] == selfType; j++) {
+			vertical++;
+			checkCells.push(x + j * width)
+		}
+		for (var j = y - 1; j >= 0 && cellMap[x][j] == selfType; j--) {
+			vertical++;
+			checkCells.push(x + j * width)
+		}
+		if (vertical >= 3) {
+			for (var to_add of checkCells) {
+				if (!markedForClear.includes(to_add)) {
+					markedForClear.push(to_add);
+				}
+			}
+		}
+	}
+
+	var score_base = 1.3;
+	var combo_base = 2;
+	var combo = 1;
+
+	var clear = function() {
+		for (var cell of markedForClear) {
+			cellMap[cell % width][Math.floor(cell / width)] = -1;
+			drawCell(cell % width, Math.floor(cell / width), true);
+		}
+		// Incrase score based on amount cleared
+
+		if (markedForClear.length > 0) {
+			console.log("Score gained: " + Math.pow(score_base, markedForClear.length));
+			console.log("Combo Multi:" + Math.pow(combo_base, combo));
+			score += Math.floor(Math.pow(score_base, markedForClear.length) * Math.pow(combo_base, combo));
+			combo++;
+			controlsLocked = STYLE.CLEAR_DELAY;
+			if (score >= currentLevel.clearToNext) {
+				PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
+				controlsLocked = STYLE.LEVEL_DELAY;
+			} else {
+				PS.statusText("Score: " + score + " Next Level: " + currentLevel.clearToNext);
+			}
+		} else {
+			combo = 1;
+			// Clearing is done. Determine whether to move to next level
+			if (score >= currentLevel.clearToNext) {
+				levelIndex++;
+				loadLevel();
+			}
+		}
+
+		markedForClear = [];
+	}
+
+	var dropRows = function() {
+		// Move tiles down in similar fashion to bubble-sort
+		for (var i = 0; i < width; i++) {
+			var tileMoved;
+			do {
+				tileMoved = false;
+				// Bubble tiles down from the bottom-up
+				for (var j = height - 1; j > 0; j--) {
+					if (cellMap[i][j] == -1 && cellMap[i][j - 1] != -1) {
+						tileMoved = true;
+						cellMap[i][j] = cellMap[i][j - 1];
+						cellMap[i][j - 1] = -1;
+					}
+				}
+			} while (tileMoved);
+
+			// Redraw column
+			drawCell(i, PS.ALL);
+
+			// Fade new cells from the top
+			for (var j = 0; j < height && cellMap[i][j] == -1; j ++) {
+				fillRandom(i, j);
+			}
+		}
+
+		matchAll();
+	}
 
 	// -1 if not active or targeting
 	var activeX = -1, activeY = -1, targetX = -1, targetY = -1;
 
+	// Swap target and active cells
 	var swap = function() {
 		if (targetX < 0 || activeX < 0) {
 			return;
@@ -166,6 +429,9 @@ var G;
 		cellMap[targetX][targetY] = temp;
 		drawCell(activeX, activeY, true);
 		drawCell(targetX, targetY, true);
+		match(activeX, activeY);
+		match(targetX, targetY);
+		clear();
 	}
 
 	var clearActive = function() {
@@ -186,6 +452,9 @@ var G;
 
 	var setTarget = function(x, y) {
 		if (x == activeX && y == activeY) {
+			clearTarget();
+			targetX = -1;
+			targetY = -1;
 			return;
 		}
 
@@ -220,12 +489,33 @@ var G;
 		}
 	}
 
+	var tick = function () {
+		if (controlsLocked > 0) {
+			controlsLocked--;
+			if (controlsLocked == 0) {
+				dropRows();
+			}
+		}
+	};
+
+	// Log database if page unloaded
+	var unloadEvent = function(event) {
+		if (!won) {
+			PS.dbEvent(DB_NAME, "completion", false);
+			// PS.dbSend(DB_NAME, "lwang5");
+			// PS.dbSend(DB_NAME, "jctblackman");
+		}
+	};
+
 	// Public functions are exposed in the global G object, which is initialized here.
 	// Only two functions need to be exposed; everything else is encapsulated!
 	// So safe. So elegant.
 
 	G = {
 		touch: function(x, y) {
+			if (controlsLocked > 0) {
+				return;
+			}
 			activeX = x;
 			activeY = y;
 			PS.border ( x, y, STYLE.HOVER.THICKNESS_ACTIVE );
@@ -237,6 +527,9 @@ var G;
 			clearTarget();
 		},
 		enter: function(x, y) {
+			if (controlsLocked > 0) {
+				return;
+			}
 			if (activeX >= 0) {
 				setTarget(x, y);
 			} else {
@@ -263,24 +556,16 @@ var G;
 			// Establish grid size
 			// This should always be done FIRST, before any other initialization!\
 
-			size(MAX_WIDTH, MAX_HEIGHT);
-			PS.gridColor( STYLE.BACKGROUND_COLOR ); // grid background color
-			PS.border( PS.ALL, PS.ALL, 0 ); // no bead borders
-			PS.borderColor ( PS.ALL, PS.ALL, STYLE.HOVER.COLOR );
-
-			PS.color( PS.ALL, PS.ALL, STYLE.BEAD_COLOR ); // Make all beads black
-			PS.alpha( PS.ALL, PS.ALL, 255 );
+			loadLevel();
 
 			// Log and send if the window is closed
 			window.addEventListener("beforeunload", unloadEvent);
 
-			PS.statusColor( STYLE.STATUS_COLOR );
-			PS.statusText( "PLEASE ADD DETAILS" );
-
 			// Initialize Database
 			PS.dbInit(DB_NAME);
 			
-			PS.timerStart( 60, tick );
+			// 10 ticks per second
+			PS.timerStart( 6, tick );
 
 			drawCell(PS.ALL, PS.ALL);
 		}
