@@ -321,50 +321,53 @@ var G;
 	// Matching functions
 	var markedForClear = [];
 
-	var matchAll = function() {
-		for (var i = 0; i < width; i++) {
-			for (var j = 0; j < height; j++) {
-				findMatches(i, j);
-			}
-		}
-		clearMarkedCells();
-	}
-
+	// Supports PS.ALL
 	var findMatches = function(x, y) {
-		var selfType = cellMap[x][y];
-		// Finds all horizontal and vertical matches involving cell at (x, y)
-		var checkCells = [x + y * width]
-		var horizontal = 1;
-		for (var i = x + 1; i < width && cellMap[i][y] == selfType; i++) {
-			horizontal++;
-			checkCells.push(i + y * width)
-		}
-		for (var i = x - 1; i >= 0 && cellMap[i][y] == selfType; i--) {
-			horizontal++;
-			checkCells.push(i + y * width)
-		}
-		if (horizontal >= 3) {
-			for (var to_add of checkCells) {
-				if (!markedForClear.includes(to_add)) {
-					markedForClear.push(to_add);
+		if (x == PS.ALL) {
+			for (var i = 0; i < width; i++) {
+				findMatches(i, y);
+			}
+			clearMarkedCells();
+		} else if (y == PS.ALL) {
+			for (var j = 0; j < height; j++) {
+				findMatches(x, j);
+			}
+		} else {
+			var selfType = cellMap[x][y];
+			// Finds all horizontal and vertical matches involving cell at (x, y)
+			var checkCells = [x + y * width]
+			var horizontal = 1;
+			for (var i = x + 1; i < width && cellMap[i][y] == selfType; i++) {
+				horizontal++;
+				checkCells.push(i + y * width)
+			}
+			for (var i = x - 1; i >= 0 && cellMap[i][y] == selfType; i--) {
+				horizontal++;
+				checkCells.push(i + y * width)
+			}
+			if (horizontal >= 3) {
+				for (var to_add of checkCells) {
+					if (!markedForClear.includes(to_add)) {
+						markedForClear.push(to_add);
+					}
 				}
 			}
-		}
 
-		var checkCells = [x + y * width]
-		var vertical = 1;
-		for (var j = y + 1; j < height && cellMap[x][j] == selfType; j++) {
-			vertical++;
-			checkCells.push(x + j * width)
-		}
-		for (var j = y - 1; j >= 0 && cellMap[x][j] == selfType; j--) {
-			vertical++;
-			checkCells.push(x + j * width)
-		}
-		if (vertical >= 3) {
-			for (var to_add of checkCells) {
-				if (!markedForClear.includes(to_add)) {
-					markedForClear.push(to_add);
+			var checkCells = [x + y * width]
+			var vertical = 1;
+			for (var j = y + 1; j < height && cellMap[x][j] == selfType; j++) {
+				vertical++;
+				checkCells.push(x + j * width)
+			}
+			for (var j = y - 1; j >= 0 && cellMap[x][j] == selfType; j--) {
+				vertical++;
+				checkCells.push(x + j * width)
+			}
+			if (vertical >= 3) {
+				for (var to_add of checkCells) {
+					if (!markedForClear.includes(to_add)) {
+						markedForClear.push(to_add);
+					}
 				}
 			}
 		}
@@ -430,7 +433,7 @@ var G;
 			}
 		}
 
-		matchAll();
+		findMatches(PS.ALL, PS.ALL);
 	}
 
 	// -1 if not active or targeting
