@@ -347,7 +347,7 @@ var G;
 			}
 			if (horizontal >= 3) {
 				for (var to_add of checkCells) {
-					if (!markedForClear.includes(to_add)) {
+					if (markedForClear.indexOf(to_add) == -1) {
 						markedForClear.push(to_add);
 					}
 				}
@@ -365,7 +365,7 @@ var G;
 			}
 			if (vertical >= 3) {
 				for (var to_add of checkCells) {
-					if (!markedForClear.includes(to_add)) {
+					if (markedForClear.indexOf(to_add) == -1) {
 						markedForClear.push(to_add);
 					}
 				}
