@@ -220,7 +220,7 @@ var G;
 		height = currentLevel.height;
 		activeTypes = currentLevel.activeTypes;
 		score = 0;
-		size(width, height);
+		setGridSize(width, height);
 
 		PS.statusColor( STYLE.STATUS_COLOR );
 		PS.statusText(currentLevel.statusText);
@@ -232,7 +232,7 @@ var G;
 	}
 
 	// Handles resizing grid and map data
-	var size = function(width, height) {
+	var setGridSize = function(width, height) {
 		PS.gridSize( width, height );
 		PS.gridColor( STYLE.BACKGROUND_COLOR ); // grid background color
 
@@ -324,13 +324,13 @@ var G;
 	var matchAll = function() {
 		for (var i = 0; i < width; i++) {
 			for (var j = 0; j < height; j++) {
-				match(i, j);
+				findMatches(i, j);
 			}
 		}
-		clear();
+		clearMarkedCells();
 	}
 
-	var match = function(x, y) {
+	var findMatches = function(x, y) {
 		var selfType = cellMap[x][y];
 		// Finds all horizontal and vertical matches involving cell at (x, y)
 		var checkCells = [x + y * width]
@@ -374,7 +374,7 @@ var G;
 	var combo_base = 2;
 	var combo = 1;
 
-	var clear = function() {
+	var clearMarkedCells = function() {
 		for (var cell of markedForClear) {
 			cellMap[cell % width][Math.floor(cell / width)] = -1;
 			drawCell(cell % width, Math.floor(cell / width), true);
@@ -446,9 +446,9 @@ var G;
 		cellMap[targetX][targetY] = temp;
 		drawCell(activeX, activeY, true);
 		drawCell(targetX, targetY, true);
-		match(activeX, activeY);
-		match(targetX, targetY);
-		clear();
+		findMatches(activeX, activeY);
+		findMatches(targetX, targetY);
+		clearMarkedCells();
 	}
 
 	var clearActive = function() {
