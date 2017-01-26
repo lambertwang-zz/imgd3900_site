@@ -16,7 +16,7 @@ var G;
 
 	// Takes h (0-360), s(0-1), and v(0-1)
 	// Returns an int containing an RGB value.
-	var hsvToRgb = function(h, s, v) {
+	function hsvToRgb(h, s, v) {
 		var c = s * v;
 		var x = c * (1 - Math.abs((h / 60.0) % 2 - 1));
 		var m = v - c;
@@ -210,7 +210,7 @@ var G;
 	// Lock the controls after matching to fade in new cells
 	var controlsLocked = 0; // Number of ticks to lock controls for
 
-	var loadLevel = function() {
+	function loadLevel() {
 		if (levelIndex >= LEVEL_DATA.length) {
 			currentLevel = LEVEL_DATA[LEVEL_DATA.length-1];
 		} else {
@@ -232,7 +232,7 @@ var G;
 	}
 
 	// Handles resizing grid and map data
-	var setGridSize = function(width, height) {
+	function setGridSize(width, height) {
 		PS.gridSize( width, height );
 		PS.gridColor( STYLE.BACKGROUND_COLOR ); // grid background color
 
@@ -255,7 +255,7 @@ var G;
 
 	// Draws cell at (x, y)
 	// Accepts PS.ALL
-	var drawCell = function(x, y, fade = false) {
+	function drawCell(x, y, fade = false) {
 		if (x == PS.ALL) {
 			for (var i = 0; i < width; i++) {
 				drawCell(i, y, fade);
@@ -284,7 +284,7 @@ var G;
 	// Put a random cell in the space (x, y)
 	// Ensures the cell type placed is different from all neighbors
 	// Accepts PS.ALL
-	var fillRandom = function(x, y) {
+	function fillRandom(x, y) {
 		if (x == PS.ALL) {
 			for (var i = 0; i < width; i++) {
 				fillRandom(i, y);
@@ -322,7 +322,7 @@ var G;
 	var markedForClear = [];
 
 	// Supports PS.ALL
-	var findMatches = function(x, y) {
+	function findMatches(x, y) {
 		if (x == PS.ALL) {
 			for (var i = 0; i < width; i++) {
 				findMatches(i, y);
@@ -377,7 +377,7 @@ var G;
 	var combo_base = 2;
 	var combo = 1;
 
-	var clearMarkedCells = function() {
+	function clearMarkedCells() {
 		for (var cell of markedForClear) {
 			cellMap[cell % width][Math.floor(cell / width)] = -1;
 			drawCell(cell % width, Math.floor(cell / width), true);
@@ -408,7 +408,7 @@ var G;
 		markedForClear = [];
 	}
 
-	var dropRows = function() {
+	function dropRows() {
 		// Move tiles down in similar fashion to bubble-sort
 		for (var i = 0; i < width; i++) {
 			var tileMoved;
@@ -440,7 +440,7 @@ var G;
 	var activeX = -1, activeY = -1, targetX = -1, targetY = -1;
 
 	// Swap target and active cells
-	var swap = function() {
+	function swap() {
 		if (targetX < 0 || activeX < 0) {
 			return;
 		}
@@ -454,7 +454,7 @@ var G;
 		clearMarkedCells();
 	}
 
-	var clearActive = function() {
+	function clearActive() {
 		if (activeX >= 0 && activeY >= 0 ) {
 			PS.border ( activeX, activeY, 0 );
 			activeX = -1;
@@ -462,7 +462,7 @@ var G;
 		}
 	}
 
-	var clearTarget = function() {
+	function clearTarget() {
 		if (targetX >= 0 && targetY >= 0 ) {
 			PS.border ( targetX, targetY, 0 );
 			targetX = -1;
@@ -470,7 +470,7 @@ var G;
 		}
 	}
 
-	var setTarget = function(x, y) {
+	function setTarget(x, y) {
 		if (x == activeX && y == activeY) {
 			clearTarget();
 			targetX = -1;
@@ -509,7 +509,7 @@ var G;
 		}
 	}
 
-	var tick = function () {
+	function tick() {
 		if (controlsLocked > 0) {
 			controlsLocked--;
 			if (controlsLocked == 0) {
