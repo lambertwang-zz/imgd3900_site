@@ -294,20 +294,24 @@ var G;
 				fillRandom(x, j);
 			}
 		} else {
-			var available = Array.apply(null, { length: activeTypes }).map(Number.call, Number);
+			var validTypes = {};
+			for (var i=0; i<activeTypes; i++) {
+				validTypes[i] = false;
+			}
 			// Check neighbors
-			if (x < width - 1 && available.includes(cellMap[x + 1][y])) {
-				available.splice(available.indexOf(cellMap[x + 1][y]), 1);
+			if (x < width - 1) {
+				delete validTypes[cellMap[x + 1][y]];
 			}
-			if (x > 0 && available.includes(cellMap[x - 1][y])) {
-				available.splice(available.indexOf(cellMap[x - 1][y]), 1);
+			if (x > 0) {
+				delete validTypes[cellMap[x - 1][y]];
 			}
-			if (y < height - 1 && available.includes(cellMap[x][y + 1])) {
-				available.splice(available.indexOf(cellMap[x][y + 1]), 1);
+			if (y < height - 1) {
+				delete validTypes[cellMap[x][y + 1]];
 			}
-			if (y > 0 && available.includes(cellMap[x][y - 1])) {
-				available.splice(available.indexOf(cellMap[x][y - 1]), 1);
+			if (y > 0) {
+				delete validTypes[cellMap[x][y - 1]];
 			}
+			var available = Object.keys(validTypes);
 			cellMap[x][y] = available[PS.random(available.length) - 1];
 			drawCell(x, y, true);
 		}
