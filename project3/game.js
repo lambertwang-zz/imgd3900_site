@@ -42,8 +42,8 @@ var G;
 				break;
 		}
 
-		return (Math.floor((rgb[0] + m) * 255) << 16) + 
-			(Math.floor((rgb[1] + m) * 255) << 8) + 
+		return (Math.floor((rgb[0] + m) * 255) << 16) +
+			(Math.floor((rgb[1] + m) * 255) << 8) +
 			Math.floor((rgb[2] + m) * 255);
 	}
 
@@ -441,7 +441,7 @@ var G;
 			activeY = -1;
 		}
 	}
-	
+
 	var clearTarget = function() {
 		if (targetX >= 0 && targetY >= 0 ) {
 			PS.border ( targetX, targetY, 0 );
@@ -563,7 +563,7 @@ var G;
 
 			// Initialize Database
 			PS.dbInit(DB_NAME);
-			
+
 			// 10 ticks per second
 			PS.timerStart( 6, tick );
 
@@ -609,4 +609,3 @@ PS.swipe = function( data, options ) {
 PS.input = function( sensors, options ) {
 	"use strict";
 };
-
