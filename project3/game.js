@@ -212,9 +212,10 @@ var G;
 
 	var loadLevel = function() {
 		if (levelIndex >= LEVEL_DATA.length) {
-			levelIndex = LEVEL_DATA.length - 1;
+			currentLevel = LEVEL_DATA[LEVEL_DATA.length-1];
+		} else {
+			currentLevel = LEVEL_DATA[levelIndex];
 		}
-		currentLevel = LEVEL_DATA[levelIndex];
 		width = currentLevel.width;
 		height = currentLevel.height;
 		activeTypes = currentLevel.activeTypes;
