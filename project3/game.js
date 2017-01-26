@@ -256,21 +256,27 @@ var G;
 	// Draws cell at (x, y)
 	// Accepts PS.ALL
 	var drawCell = function(x, y, fade = false) {
-		for (var i = (x == PS.ALL ? 0 : x); i < (x == PS.ALL ? width : x + 1); i++) {
-			for (var j = (y == PS.ALL ? 0 : y); j < (y == PS.ALL ? height : y + 1); j++) {
-				if (cellMap[i][j] == -1) {
-					PS.glyph(i, j, 0);
-				} else {
-					var cell = BEAD_TYPES[cellMap[i][j]]
-					PS.glyph(i, j, cell.glyph);
-					PS.glyphColor(i, j, cell.color);
-				}
-				if (fade) {
-					PS.fade(i, j, 0);
-					PS.color(i, j, STYLE.FADE_COLOR);
-					PS.fade(i, j, STYLE.FADE_TIME);
-					PS.color(i, j, STYLE.BEAD_COLOR);
-				}
+		if (x == PS.ALL) {
+			for (var i = 0; i < width; i++) {
+				drawCell(i, y, fade);
+			}
+		} else if (y == PS.ALL) {
+			for (var j = 0; j < height; j++) {
+				drawCell(x, j, fade);
+			}
+		} else {
+			if (cellMap[x][y] == -1) {
+				PS.glyph(x, y, 0);
+			} else {
+				var cell = BEAD_TYPES[cellMap[x][y]]
+				PS.glyph(x, y, cell.glyph);
+				PS.glyphColor(x, y, cell.color);
+			}
+			if (fade) {
+				PS.fade(x, y, 0);
+				PS.color(x, y, STYLE.FADE_COLOR);
+				PS.fade(x, y, STYLE.FADE_TIME);
+				PS.color(x, y, STYLE.BEAD_COLOR);
 			}
 		}
 	}
@@ -279,25 +285,31 @@ var G;
 	// Ensures the cell type placed is different from all neighbors
 	// Accepts PS.ALL
 	var fillRandom = function(x, y) {
-		for (var i = (x == PS.ALL ? 0 : x); i < (x == PS.ALL ? width : x + 1); i++) {
-			for (var j = (y == PS.ALL ? 0 : y); j < (y == PS.ALL ? height : y + 1); j++) {
-				var available = Array.apply(null, { length: activeTypes }).map(Number.call, Number);
-				// Check neighbors
-				if (i < width - 1 && available.includes(cellMap[i + 1][j])) {
-					available.splice(available.indexOf(cellMap[i + 1][j]), 1);
-				}
-				if (i > 0 && available.includes(cellMap[i - 1][j])) {
-					available.splice(available.indexOf(cellMap[i - 1][j]), 1);
-				}
-				if (j < height - 1 && available.includes(cellMap[i][j + 1])) {
-					available.splice(available.indexOf(cellMap[i][j + 1]), 1);
-				}
-				if (j > 0 && available.includes(cellMap[i][j - 1])) {
-					available.splice(available.indexOf(cellMap[i][j - 1]), 1);
-				}
-				cellMap[i][j] = available[PS.random(available.length) - 1];
-				drawCell(i, j, true);
+		if (x == PS.ALL) {
+			for (var i = 0; i < width; i++) {
+				fillRandom(i, y);
 			}
+		} else if (y == PS.ALL) {
+			for (var j = 0; j < height; j++) {
+				fillRandom(x, j);
+			}
+		} else {
+			var available = Array.apply(null, { length: activeTypes }).map(Number.call, Number);
+			// Check neighbors
+			if (x < width - 1 && available.includes(cellMap[x + 1][y])) {
+				available.splice(available.indexOf(cellMap[x + 1][y]), 1);
+			}
+			if (x > 0 && available.includes(cellMap[x - 1][y])) {
+				available.splice(available.indexOf(cellMap[x - 1][y]), 1);
+			}
+			if (y < height - 1 && available.includes(cellMap[x][y + 1])) {
+				available.splice(available.indexOf(cellMap[x][y + 1]), 1);
+			}
+			if (y > 0 && available.includes(cellMap[x][y - 1])) {
+				available.splice(available.indexOf(cellMap[x][y - 1]), 1);
+			}
+			cellMap[x][y] = available[PS.random(available.length) - 1];
+			drawCell(x, y, true);
 		}
 	}
 
