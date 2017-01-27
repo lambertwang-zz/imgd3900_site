@@ -545,6 +545,8 @@ var G;
 			swap();
 			clearActive();
 			clearTarget();
+			PS.borderColor ( x, y, STYLE.HOVER.COLOR );
+			PS.border ( x, y, STYLE.HOVER.THICKNESS );
 		},
 		enter: function(x, y) {
 			if (controlsLocked > 0) {
