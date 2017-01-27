@@ -55,7 +55,7 @@ var G;
 		BACKGROUND_COLOR: hsvToRgb(0, 0, .1),
 		BEAD_COLOR: hsvToRgb(0, 0, 0),
 		FADE_COLOR: hsvToRgb(0, 0, .5),
-		FADE_TIME: 50,
+		FADE_TIME: 20,
 		STATUS_COLOR: 0xffffff,
 		HOVER: {
 			COLOR: hsvToRgb(0, 0, 1),
@@ -273,10 +273,17 @@ var G;
 				PS.glyphColor(x, y, cell.color);
 			}
 			if (fade) {
-				PS.fade(x, y, 0);
-				PS.color(x, y, STYLE.FADE_COLOR);
-				PS.fade(x, y, STYLE.FADE_TIME);
-				PS.color(x, y, STYLE.BEAD_COLOR);
+				console.log(PS.fade(x, y).rate);
+				if (PS.fade(x, y).rate == 0) {
+					PS.fade(x, y, 0);
+					PS.color(x, y, STYLE.FADE_COLOR);
+					PS.fade(x, y, STYLE.FADE_TIME, {
+						onEnd: function(x, y) {
+							PS.fade(x, y, 0);
+						}.bind(this, x, y)
+					});
+					PS.color(x, y, STYLE.BEAD_COLOR);
+				}
 			}
 		}
 	}
