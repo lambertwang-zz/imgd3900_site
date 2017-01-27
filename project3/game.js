@@ -438,14 +438,15 @@ var G;
 			combo = 0; // Start at combo = 0 so base multiplier is 1.
 			// Clearing is done. Determine whether to move to next level
 			if (score >= currentLevel.clearToNext) {
-				if (last_dropped) {
+				// Delay the level change until we finish dropping tiles
+				if (!last_dropped && levelIndex > 2) {
+					last_dropped = true;
+					controlsLocked = STYLE.LEVEL_DELAY;
+				} else {
 					last_dropped = false;
 					completion_text_displayed = false;
 					levelIndex++;
 					loadLevel();
-				} else {
-					last_dropped = true;
-					controlsLocked = STYLE.LEVEL_DELAY;
 				}
 			}
 		}
