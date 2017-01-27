@@ -14,6 +14,9 @@ var G;
 ( function () {
 	"use strict";
 
+	// Metrics and variables
+	var SCORE_PAD = "0000";
+
 	// Takes h (0-360), s(0-1), and v(0-1)
 	// Returns an int containing an RGB value.
 	function hsvToRgb(h, s, v) {
@@ -419,7 +422,7 @@ var G;
 				PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
 				controlsLocked = STYLE.LEVEL_DELAY;
 			} else {
-				PS.statusText("Score: " + score + " out of " + currentLevel.clearToNext);
+				PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
 			}
 		} else {
 			combo = 0; // Start at combo = 0 so base multiplier is 1.
