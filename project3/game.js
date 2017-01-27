@@ -121,7 +121,7 @@ var G;
 		{
 			width: 4,
 			height: 1,
-			clearToNext: 3,
+			clearToNext: -999,
 			activeTypes: 5,
 			customMap: [[0], [0], [1], [0]],
 			statusText: "Touch and drag cells to swap them!"
@@ -129,7 +129,7 @@ var G;
 		{
 			width: 2,
 			height: 3,
-			clearToNext: 6,
+			clearToNext: -999,
 			activeTypes: 5,
 			customMap: [[2, 3, 2], [3, 2, 3]],
 			statusText: "Make cool combos!"
@@ -137,63 +137,63 @@ var G;
 		{
 			width: 6,
 			height: 6,
-			clearToNext: 20,
+			clearToNext: 50,
 			activeTypes: 5,
 			statusText: "You're on your own!"
 		},
 		{
 			width: 7,
 			height: 7,
-			clearToNext: 40,
+			clearToNext: 100,
 			activeTypes: 5,
 			statusText: "Level 2"
 		},
 		{
 			width: 7,
 			height: 7,
-			clearToNext: 60,
+			clearToNext: 150,
 			activeTypes: 6,
 			statusText: "Level 3"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 80,
+			clearToNext: 200,
 			activeTypes: 7,
 			statusText: "Level 4"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 100,
+			clearToNext: 300,
 			activeTypes: 8,
 			statusText: "Level 5"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 150,
+			clearToNext: 400,
 			activeTypes: 8,
 			statusText: "Level 6"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 200,
+			clearToNext: 600,
 			activeTypes: 9,
 			statusText: "Level 7"
 		},
 		{
 			width: 9,
 			height: 9,
-			clearToNext: 300,
+			clearToNext: 800,
 			activeTypes: 9,
 			statusText: "Level 8"
 		},
 		{
 			width: 10,
 			height: 10,
-			clearToNext: 500,
+			clearToNext: 1000,
 			activeTypes: 10,
 			statusText: "Endless Mode"
 		},
@@ -205,7 +205,7 @@ var G;
 	var cellMap = [];
 	var levelIndex = 0;
 	var currentLevel;
-	var score = 0;
+	var score = -9; // So that your score is exactly 0 when you start level 1
 
 	// Lock the controls after matching to fade in new cells
 	var controlsLocked = 0; // Number of ticks to lock controls for
@@ -213,13 +213,13 @@ var G;
 	function loadLevel() {
 		if (levelIndex >= LEVEL_DATA.length) {
 			currentLevel = LEVEL_DATA[LEVEL_DATA.length-1];
+			currentLevel.clearToNext = levelIndex*200 - 1000;
 		} else {
 			currentLevel = LEVEL_DATA[levelIndex];
 		}
 		width = currentLevel.width;
 		height = currentLevel.height;
 		activeTypes = currentLevel.activeTypes;
-		score = 0;
 		setGridSize(width, height);
 
 		PS.statusColor( STYLE.STATUS_COLOR );
@@ -373,8 +373,6 @@ var G;
 		}
 	}
 
-	var score_base = 1.3;
-	var combo_base = 2;
 	var combo = 1;
 
 	function clearMarkedCells() {
@@ -385,16 +383,16 @@ var G;
 		// Incrase score based on amount cleared
 
 		if (markedForClear.length > 0) {
-			console.log("Score gained: " + Math.pow(score_base, markedForClear.length));
-			console.log("Combo Multi:" + Math.pow(combo_base, combo));
-			score += Math.floor(Math.pow(score_base, markedForClear.length) * Math.pow(combo_base, combo));
+			console.log("Score gained: N * 2 ^ C = ? * 2 ^ ? = ?", [markedForClear.length, combo, markedForClear.length * (1 << combo)]);
+
+			score += markedForClear.length * (1 << combo);
 			combo++;
 			controlsLocked = STYLE.CLEAR_DELAY;
 			if (score >= currentLevel.clearToNext) {
 				PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
 				controlsLocked = STYLE.LEVEL_DELAY;
 			} else {
-				PS.statusText("Score: " + score + " Next Level: " + currentLevel.clearToNext);
+				PS.statusText("Score: " + score + " out of " + currentLevel.clearToNext);
 			}
 		} else {
 			combo = 1;
