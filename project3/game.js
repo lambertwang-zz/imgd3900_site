@@ -227,6 +227,7 @@ var G;
 	var controlsLocked = 0; // Number of ticks to lock controls for
 
 	function loadLevel() {
+		PS.dbEvent(DB_NAME, "Loaded level", levelIndex);
 		if (levelIndex >= LEVEL_DATA.length) {
 			currentLevel = LEVEL_DATA[LEVEL_DATA.length-1];
 			currentLevel.clearToNext = levelIndex*200 - 1000;
@@ -549,15 +550,6 @@ var G;
 		}
 	};
 
-	// Log database if page unloaded
-	var unloadEvent = function(event) {
-		if (!won) {
-			PS.dbEvent(DB_NAME, "completion", false);
-			// PS.dbSend(DB_NAME, "lwang5");
-			// PS.dbSend(DB_NAME, "jctblackman");
-		}
-	};
-
 	// Public functions are exposed in the global G object, which is initialized here.
 	// Only two functions need to be exposed; everything else is encapsulated!
 	// So safe. So elegant.
@@ -600,6 +592,12 @@ var G;
 			clearActive();
 			clearTarget();
 		},
+		shutdown: function() {
+			PS.dbEvent(DB_NAME, "final score", score);
+			// PS.dbSend(DB_NAME, "lwang5");
+			// PS.dbSend(DB_NAME, "jctblackman");
+			PS.dbDump(DB_NAME);
+		},
 
 		// Initialize the game
 		// Called once at startup
@@ -612,16 +610,12 @@ var G;
 			PS.audioLoad( SOUND_COMBO, SOUND_OPTIONS );
 			PS.audioLoad( SOUND_SWAP, SOUND_OPTIONS );
 
-			// Establish grid size
-			// This should always be done FIRST, before any other initialization!\
-
-			loadLevel();
-
-			// Log and send if the window is closed
-			window.addEventListener("beforeunload", unloadEvent);
-
 			// Initialize Database
 			PS.dbInit(DB_NAME);
+
+			// Establish grid size
+			// This should always be done FIRST, before any other initialization!
+			loadLevel();
 
 			// 10 ticks per second
 			PS.timerStart( 6, tick );
@@ -640,3 +634,4 @@ PS.release = G.release;
 PS.enter = G.enter;
 PS.exit = G.exit;
 PS.exitGrid = G.exitGrid;
+PS.shutdown = G.shutdown;
