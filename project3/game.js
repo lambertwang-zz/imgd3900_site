@@ -97,7 +97,7 @@ var G;
 			glyph: 0x25BC,
 		},
 		{ // Cyan Circle
-			color: hsvToRgb(200, .8, 1),
+			color: hsvToRgb(240, .8, 1),
 			glyph: 0x2B24,
 		},
 		{ // Purple Heart
