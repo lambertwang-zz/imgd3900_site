@@ -15,7 +15,7 @@ var G;
 	"use strict";
 
 	// Metrics and variables
-	var SCORE_PAD = "0000";
+	var SCORE_PAD = "0";
 
 	// Takes h (0-360), s(0-1), and v(0-1)
 	// Returns an int containing an RGB value.
@@ -398,6 +398,8 @@ var G;
 	}
 
 	var combo = 0;
+	var last_dropped = false;
+	var completion_text_displayed = false;
 
 	function clearMarkedCells() {
 		for (var cell of markedForClear) {
@@ -419,8 +421,13 @@ var G;
 			combo++;
 			controlsLocked = STYLE.CLEAR_DELAY;
 			if (score >= currentLevel.clearToNext) {
-				PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
-				controlsLocked = STYLE.LEVEL_DELAY;
+				controlsLocked = STYLE.CLEAR_DELAY;
+				if (completion_text_displayed) {
+					PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
+				} else {
+					PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
+					completion_text_displayed = true;
+				}
 			} else {
 				PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
 			}
@@ -428,8 +435,15 @@ var G;
 			combo = 0; // Start at combo = 0 so base multiplier is 1.
 			// Clearing is done. Determine whether to move to next level
 			if (score >= currentLevel.clearToNext) {
-				levelIndex++;
-				loadLevel();
+				if (last_dropped) {
+					last_dropped = false;
+					completion_text_displayed = false;
+					levelIndex++;
+					loadLevel();
+				} else {
+					last_dropped = true;
+					controlsLocked = STYLE.LEVEL_DELAY;
+				}
 			}
 		}
 
