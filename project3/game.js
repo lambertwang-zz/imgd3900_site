@@ -86,7 +86,7 @@ var G;
 	var BEAD_TYPES = [
 		{ // Red Square
 			color: hsvToRgb(0, .8, 1),
-			glyph: 0x25A0,
+			glyph: 0x2588,
 		},
 		{ // Blue Rhombus
 			color: hsvToRgb(240, .8, 1),
