@@ -426,7 +426,7 @@ var G;
 			if (score >= currentLevel.clearToNext) {
 				controlsLocked = STYLE.CLEAR_DELAY;
 				if (completion_text_displayed) {
-					PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
+					PS.statusText("Score: " + score + SCORE_PAD);
 				} else {
 					PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
 					completion_text_displayed = true;
