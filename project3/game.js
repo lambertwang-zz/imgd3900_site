@@ -609,8 +609,8 @@ var G;
 		},
 		shutdown: function() {
 			PS.dbEvent(DB_NAME, "final score", score);
-			// PS.dbSend(DB_NAME, "lwang5");
-			// PS.dbSend(DB_NAME, "jctblackman");
+			PS.dbSend(DB_NAME, "lwang5");
+			PS.dbSend(DB_NAME, "jctblackman");
 			PS.dbDump(DB_NAME);
 		},
 
