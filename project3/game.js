@@ -63,9 +63,22 @@ var G;
 			THICKNESS: 2,
 			THICKNESS_ACTIVE: 4
 		},
-		CLEAR_DELAY: 5,
+		CLEAR_DELAY: 8,
 		LEVEL_DELAY: 10
 	}
+
+	var SOUND_OPTIONS = {
+		autoplay: false,
+		path: "sounds/",
+		lock: true,
+		fileTypes: [ "wav" ]
+	};
+
+	// Sounds created using http://www.bfxr.net/ available under the Apache 2.0 License
+	var SOUND_LEVEL = "level";
+	var SOUND_CLEAR = "clear";
+	var SOUND_COMBO = "combo";
+	var SOUND_SWAP = "swap";
 
 	var BEAD_TYPES = [
 		{ // Red Square
@@ -229,6 +242,7 @@ var G;
 			cellMap = currentLevel.customMap;
 		}
 		drawCell(PS.ALL, PS.ALL);
+		PS.audioPlay( SOUND_LEVEL, SOUND_OPTIONS );
 	}
 
 	// Handles resizing grid and map data
@@ -380,7 +394,7 @@ var G;
 		}
 	}
 
-	var combo = 1;
+	var combo = 0;
 
 	function clearMarkedCells() {
 		for (var cell of markedForClear) {
@@ -392,6 +406,12 @@ var G;
 		if (markedForClear.length > 0) {
 			console.log("Score gained: N * 2 ^ C = ? * 2 ^ ? = ?", [markedForClear.length, combo, markedForClear.length * (1 << combo)]);
 
+			if (combo > 0) {
+				PS.audioPlay( SOUND_COMBO, SOUND_OPTIONS );
+			} else {
+				PS.audioPlay( SOUND_CLEAR, SOUND_OPTIONS );
+			}
+
 			score += markedForClear.length * (1 << combo);
 			combo++;
 			controlsLocked = STYLE.CLEAR_DELAY;
@@ -402,7 +422,7 @@ var G;
 				PS.statusText("Score: " + score + " out of " + currentLevel.clearToNext);
 			}
 		} else {
-			combo = 1;
+			combo = 0; // Start at combo = 0 so base multiplier is 1.
 			// Clearing is done. Determine whether to move to next level
 			if (score >= currentLevel.clearToNext) {
 				levelIndex++;
@@ -452,6 +472,7 @@ var G;
 		var temp = cellMap[activeX][activeY];
 		cellMap[activeX][activeY] = cellMap[targetX][targetY];
 		cellMap[targetX][targetY] = temp;
+		PS.audioPlay( SOUND_SWAP, SOUND_OPTIONS );
 		drawCell(activeX, activeY, true);
 		drawCell(targetX, targetY, true);
 		findMatches(activeX, activeY);
@@ -579,6 +600,12 @@ var G;
 		// Called once at startup
 
 		init : function () {
+
+			// Preload & lock sounds
+			PS.audioLoad( SOUND_LEVEL, SOUND_OPTIONS );
+			PS.audioLoad( SOUND_CLEAR, SOUND_OPTIONS );
+			PS.audioLoad( SOUND_COMBO, SOUND_OPTIONS );
+			PS.audioLoad( SOUND_SWAP, SOUND_OPTIONS );
 
 			// Establish grid size
 			// This should always be done FIRST, before any other initialization!\
