@@ -290,7 +290,6 @@ var G;
 				PS.glyphColor(x, y, cell.color);
 			}
 			if (fade) {
-				console.log(PS.fade(x, y).rate);
 				if (PS.fade(x, y).rate == 0) {
 					PS.fade(x, y, 0);
 					PS.color(x, y, STYLE.FADE_COLOR);
@@ -340,7 +339,6 @@ var G;
 			drawCell(x, y, true);
 		}
 	}
-
 
 	// Matching functions
 	var markedForClear = [];
@@ -407,7 +405,11 @@ var G;
 		// Incrase score based on amount cleared
 
 		if (markedForClear.length > 0) {
-			console.log("Score gained: N * 2 ^ C = ? * 2 ^ ? = ?", [markedForClear.length, combo, markedForClear.length * (1 << combo)]);
+			PS.dbEvent(DB_NAME, "Cleared N cells", markedForClear.length);
+			if (combo > 1) {
+				PS.dbEvent(DB_NAME, "at combo level", combo);
+			}
+			console.log("Score gained: N * 2 ^ C = " + markedForClear.length + " * 2 ^ " + combo + " = " + markedForClear.length * (1 << combo));
 
 			if (combo > 0) {
 				PS.audioPlay( SOUND_COMBO, SOUND_OPTIONS );
@@ -602,7 +604,7 @@ var G;
 		// Initialize the game
 		// Called once at startup
 
-		init : function () {
+		init: function () {
 
 			// Preload & lock sounds
 			PS.audioLoad( SOUND_LEVEL, SOUND_OPTIONS );
@@ -632,37 +634,9 @@ var G;
 // PS.init( system, options )
 // Initializes the game
 
-PS.init = function( system, options ) {
-	"use strict";
-
-	G.init(); // game-specific initialization
-};
-
-// PS.touch ( x, y, data, options )
-// Called when the mouse button is clicked on a bead, or when a bead is touched
-
+PS.init = G.init;
 PS.touch = G.touch;
-
 PS.release = G.release;
-
 PS.enter = G.enter;
-
 PS.exit = G.exit;
-
 PS.exitGrid = G.exitGrid;
-
-PS.keyDown = function( key, shift, ctrl, options ) {
-	"use strict";
-};
-
-PS.keyUp = function( key, shift, ctrl, options ) {
-	"use strict";
-};
-
-PS.swipe = function( data, options ) {
-	"use strict";
-};
-
-PS.input = function( sensors, options ) {
-	"use strict";
-};
