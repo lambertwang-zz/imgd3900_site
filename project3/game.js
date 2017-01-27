@@ -90,7 +90,7 @@ var G;
 		},
 		{ // Blue Rhombus
 			color: hsvToRgb(240, .8, 1),
-			glyph: 0x25C6,
+			glyph: 0x1F537,
 		},
 		{ // Orange Triangle
 			color: hsvToRgb(30, 1, 1),
@@ -98,11 +98,11 @@ var G;
 		},
 		{ // Cyan Circle
 			color: hsvToRgb(200, .8, 1),
-			glyph: 0x25CF,
+			glyph: 0x2B24,
 		},
-		{ // Pink Heart
-			color: hsvToRgb(330, .6, 1),
-			glyph: 0x2665,
+		{ // Purple Heart
+			color: hsvToRgb(290, .8, 1),
+			glyph: 0x1F49C,
 		},
 		{ // Green Hex
 			color: hsvToRgb(110, .7, 1),
@@ -112,8 +112,8 @@ var G;
 			color: hsvToRgb(60, 1, 1),
 			glyph: 0x2605,
 		},
-		{ // Purple Cross
-			color: hsvToRgb(290, .8, 1),
+		{ // Pink Cross
+			color: hsvToRgb(330, .6, 1),
 			glyph: 0x2756,
 		},
 		{ // White snowflake
