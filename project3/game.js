@@ -227,6 +227,7 @@ var G;
 	var controlsLocked = 0; // Number of ticks to lock controls for
 
 	function loadLevel() {
+		PS.dbEvent(DB_NAME, "Loaded level", levelIndex);
 		if (levelIndex >= LEVEL_DATA.length) {
 			currentLevel = LEVEL_DATA[LEVEL_DATA.length-1];
 			currentLevel.clearToNext = levelIndex*200 - 1000;
@@ -290,7 +291,6 @@ var G;
 				PS.glyphColor(x, y, cell.color);
 			}
 			if (fade) {
-				console.log(PS.fade(x, y).rate);
 				if (PS.fade(x, y).rate == 0) {
 					PS.fade(x, y, 0);
 					PS.color(x, y, STYLE.FADE_COLOR);
@@ -340,7 +340,6 @@ var G;
 			drawCell(x, y, true);
 		}
 	}
-
 
 	// Matching functions
 	var markedForClear = [];
@@ -409,7 +408,11 @@ var G;
 		// Incrase score based on amount cleared
 
 		if (markedForClear.length > 0) {
-			console.log("Score gained: N * 2 ^ C = ? * 2 ^ ? = ?", [markedForClear.length, combo, markedForClear.length * (1 << combo)]);
+			PS.dbEvent(DB_NAME, "Cleared N cells", markedForClear.length);
+			if (combo > 1) {
+				PS.dbEvent(DB_NAME, "at combo level", combo);
+			}
+			console.log("Score gained: N * 2 ^ C = " + markedForClear.length + " * 2 ^ " + combo + " = " + markedForClear.length * (1 << combo));
 
 			if (combo > 0) {
 				PS.audioPlay( SOUND_COMBO, SOUND_OPTIONS );
@@ -561,15 +564,6 @@ var G;
 		}
 	};
 
-	// Log database if page unloaded
-	var unloadEvent = function(event) {
-		if (!won) {
-			PS.dbEvent(DB_NAME, "completion", false);
-			// PS.dbSend(DB_NAME, "lwang5");
-			// PS.dbSend(DB_NAME, "jctblackman");
-		}
-	};
-
 	// Public functions are exposed in the global G object, which is initialized here.
 	// Only two functions need to be exposed; everything else is encapsulated!
 	// So safe. So elegant.
@@ -612,11 +606,17 @@ var G;
 			clearActive();
 			clearTarget();
 		},
+		shutdown: function() {
+			PS.dbEvent(DB_NAME, "final score", score);
+			// PS.dbSend(DB_NAME, "lwang5");
+			// PS.dbSend(DB_NAME, "jctblackman");
+			PS.dbDump(DB_NAME);
+		},
 
 		// Initialize the game
 		// Called once at startup
 
-		init : function () {
+		init: function () {
 
 			// Preload & lock sounds
 			PS.audioLoad( SOUND_LEVEL, SOUND_OPTIONS );
@@ -624,16 +624,12 @@ var G;
 			PS.audioLoad( SOUND_COMBO, SOUND_OPTIONS );
 			PS.audioLoad( SOUND_SWAP, SOUND_OPTIONS );
 
-			// Establish grid size
-			// This should always be done FIRST, before any other initialization!\
-
-			loadLevel();
-
-			// Log and send if the window is closed
-			window.addEventListener("beforeunload", unloadEvent);
-
 			// Initialize Database
 			PS.dbInit(DB_NAME);
+
+			// Establish grid size
+			// This should always be done FIRST, before any other initialization!
+			loadLevel();
 
 			// 10 ticks per second
 			PS.timerStart( 6, tick );
@@ -646,37 +642,10 @@ var G;
 // PS.init( system, options )
 // Initializes the game
 
-PS.init = function( system, options ) {
-	"use strict";
-
-	G.init(); // game-specific initialization
-};
-
-// PS.touch ( x, y, data, options )
-// Called when the mouse button is clicked on a bead, or when a bead is touched
-
+PS.init = G.init;
 PS.touch = G.touch;
-
 PS.release = G.release;
-
 PS.enter = G.enter;
-
 PS.exit = G.exit;
-
 PS.exitGrid = G.exitGrid;
-
-PS.keyDown = function( key, shift, ctrl, options ) {
-	"use strict";
-};
-
-PS.keyUp = function( key, shift, ctrl, options ) {
-	"use strict";
-};
-
-PS.swipe = function( data, options ) {
-	"use strict";
-};
-
-PS.input = function( sensors, options ) {
-	"use strict";
-};
+PS.shutdown = G.shutdown;
