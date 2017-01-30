@@ -19,10 +19,10 @@ var G;
 
 	function unloadEvent(e) {
 		PS.dbEvent(DB_NAME, "final score", score);
-		//PS.dbSend(DB_NAME, "lwang5");
-		//PS.dbSend(DB_NAME, "jctblackman");
-	}
-
+		// Only dbSend if hosted, not locally testing
+		if (window.location.hostname == "users.wpi.edu") {
+			PS.dbSend(DB_NAME, "lwang5");
+			PS.dbSend(DB_NAME, "jctblackman");
 		}
 	}
 
