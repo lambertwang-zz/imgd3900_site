@@ -23,37 +23,7 @@ var G;
 		//PS.dbSend(DB_NAME, "jctblackman");
 	}
 
-	// Takes h (0-360), s(0-1), and v(0-1)
-	// Returns an int containing an RGB value.
-	function hsvToRgb(h, s, v) {
-		var c = s * v;
-		var x = c * (1 - Math.abs((h / 60.0) % 2 - 1));
-		var m = v - c;
-		var rgb = [0, 0, 0];
-		switch (Math.floor(h / 60)) {
-			case 0:
-				rgb = [c, x, 0];
-				break;
-			case 1:
-				rgb = [x, c, 0];
-				break;
-			case 2:
-				rgb = [0, c, x];
-				break;
-			case 3:
-				rgb = [0, x, c];
-				break;
-			case 4:
-				rgb = [x, 0, c];
-				break;
-			case 5:
-				rgb = [c, 0, x];
-				break;
 		}
-
-		return (Math.floor((rgb[0] + m) * 255) << 16) +
-			(Math.floor((rgb[1] + m) * 255) << 8) +
-			Math.floor((rgb[2] + m) * 255);
 	}
 
 	var MAX_WIDTH = 10;
@@ -61,20 +31,21 @@ var G;
 	var DB_NAME = "three_bead_telemetry";
 
 	var STYLE = {
-		BACKGROUND_COLOR: hsvToRgb(0, 0, .1),
-		BEAD_COLOR: hsvToRgb(0, 0, 0),
-		FADE_COLOR: hsvToRgb(0, 0, .5),
+		BACKGROUND_COLOR: PS.COLOR_BLACK,
+		BEAD_COLOR: PS.COLOR_BLACK,
+		FADE_COLOR: PS.COLOR_GRAY,
 		FADE_TIME: 20,
-		STATUS_COLOR: 0xffffff,
+		STATUS_COLOR: PS.COLOR_WHITE,
 		HOVER: {
-			COLOR: hsvToRgb(0, 0, 1),
-			COLOR_ACTIVE: hsvToRgb(0, .8, 1),
+			COLOR: PS.COLOR_WHITE,
+			COLOR_ACTIVE: 0xFF3232,
 			THICKNESS: 2,
 			THICKNESS_ACTIVE: 4
 		},
 		CLEAR_DELAY: 8,
 		LEVEL_DELAY: 10
 	}
+	console.log(STYLE);
 
 	var SOUND_OPTIONS = {
 		autoplay: false,
@@ -91,44 +62,44 @@ var G;
 
 	var BEAD_TYPES = [
 		{ // Red Square
-			color: hsvToRgb(0, .8, 1),
+			color: PS.COLOR_RED,
 			glyph: 0x2588,
 		},
-		{ // Blue Rhombus
-			color: hsvToRgb(240, .8, 1),
+		{ // Light Blue Rhombus
+			color: 0x0080FF,
 			glyph: 0x1F537,
 		},
 		{ // Orange Triangle
-			color: hsvToRgb(30, 1, 1),
+			color: PS.COLOR_ORANGE,
 			glyph: 0x25BC,
 		},
 		{ // Cyan Circle
-			color: hsvToRgb(200, .8, 1),
+			color: PS.COLOR_CYAN,
 			glyph: 0x26AB,
 		},
 		{ // Purple Heart
-			color: hsvToRgb(290, .8, 1),
+			color: PS.COLOR_VIOLET,
 			glyph: 0x1F49C,
 		},
-		{ // Green Hex
-			color: hsvToRgb(110, .7, 1),
+		{ // Green Clover
+			color: PS.COLOR_GREEN,
 			glyph: 0x2618,
 		},
 		{ // Yellow Star
-			color: hsvToRgb(60, 1, 1),
+			color: PS.COLOR_YELLOW,
 			glyph: 0x2605,
 		},
 		{ // Pink Cross
-			color: hsvToRgb(330, .6, 1),
+			color: PS.COLOR_MAGENTA,
 			glyph: 0x2756,
 		},
-		{ // White snowflake
-			color: hsvToRgb(0, 0, 1),
+		{ // White Snowflake
+			color: PS.COLOR_WHITE,
 			glyph: 0x2746,
 		},
-		{ // Teal Music Notes
-			color: hsvToRgb(160, .8, 1),
-			glyph: 0x266B
+		{ // Blue Music Note
+			color: PS.COLOR_BLUE,
+			glyph: 0x266B,
 		}
 	]
 
