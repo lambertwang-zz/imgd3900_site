@@ -19,8 +19,8 @@ var G;
 
 	function unloadEvent(e) {
 		PS.dbEvent(DB_NAME, "final score", score);
-		PS.dbSend(DB_NAME, "lwang5");
-		PS.dbSend(DB_NAME, "jctblackman");
+		//PS.dbSend(DB_NAME, "lwang5");
+		//PS.dbSend(DB_NAME, "jctblackman");
 	}
 
 	// Takes h (0-360), s(0-1), and v(0-1)
@@ -139,83 +139,93 @@ var G;
 		"You're an expert!"
 	];
 
+	var TUTORIAL_COUNT = 3;
+
 	var LEVEL_DATA = [
 		{
-			width: 4,
+			width: 5,
 			height: 1,
-			clearToNext: -999,
-			activeTypes: 5,
-			customMap: [[0], [0], [1], [0]],
+			clearToNext: -63,
+			activeTypes: 0,
+			customMap: [[0], [2], [0], [1], [0]],
 			statusText: "Touch and drag cells to swap them!"
 		},
 		{
 			width: 2,
 			height: 3,
-			clearToNext: -999,
-			activeTypes: 5,
+			clearToNext: -27,
+			activeTypes: 0,
 			customMap: [[2, 3, 2], [3, 2, 3]],
 			statusText: "Make cool combos!"
 		},
 		{
+			width: 3,
+			height: 4,
+			clearToNext: 0,
+			activeTypes: 0,
+			customMap: [[-1, -2, -3, 3], [4, 3, 4, 4], [-4, -5, -6, 3]],
+			statusText: "Make chains for tons of points!"
+		},
+		{
 			width: 6,
 			height: 6,
-			clearToNext: 50,
+			clearToNext: 100,
 			activeTypes: 5,
 			statusText: "You're on your own!"
 		},
 		{
 			width: 7,
 			height: 7,
-			clearToNext: 100,
+			clearToNext: 250,
 			activeTypes: 5,
 			statusText: "Level 2"
 		},
 		{
 			width: 7,
 			height: 7,
-			clearToNext: 150,
+			clearToNext: 500,
 			activeTypes: 6,
 			statusText: "Level 3"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 200,
+			clearToNext: 1000,
 			activeTypes: 7,
 			statusText: "Level 4"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 300,
+			clearToNext: 4000,
 			activeTypes: 8,
 			statusText: "Level 5"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 400,
+			clearToNext: 8000,
 			activeTypes: 8,
 			statusText: "Level 6"
 		},
 		{
 			width: 8,
 			height: 8,
-			clearToNext: 600,
+			clearToNext: 15000,
 			activeTypes: 9,
 			statusText: "Level 7"
 		},
 		{
 			width: 9,
 			height: 9,
-			clearToNext: 800,
+			clearToNext: 25000,
 			activeTypes: 9,
 			statusText: "Level 8"
 		},
 		{
 			width: 10,
 			height: 10,
-			clearToNext: 1000,
+			clearToNext: 50000,
 			activeTypes: 10,
 			statusText: "Endless Mode"
 		},
@@ -227,7 +237,7 @@ var G;
 	var cellMap = [];
 	var levelIndex = 0;
 	var currentLevel;
-	var score = -9; // So that your score is exactly 0 when you start level 1
+	var score = -72; // So that your score is exactly 0 when you start level 1
 
 	// Lock the controls after matching to fade in new cells
 	var controlsLocked = 0; // Number of ticks to lock controls for
@@ -236,7 +246,7 @@ var G;
 		PS.dbEvent(DB_NAME, "Loaded level", levelIndex);
 		if (levelIndex >= LEVEL_DATA.length) {
 			currentLevel = LEVEL_DATA[LEVEL_DATA.length-1];
-			currentLevel.clearToNext = levelIndex*200 - 1000;
+			currentLevel.clearToNext = currentLevel.clearToNext + levelIndex * 1000;
 		} else {
 			currentLevel = LEVEL_DATA[levelIndex];
 		}
@@ -246,7 +256,11 @@ var G;
 		setGridSize(width, height);
 
 		PS.statusColor( STYLE.STATUS_COLOR );
-		PS.statusText(currentLevel.statusText);
+		if (levelIndex >= TUTORIAL_COUNT) {
+			PS.statusText(currentLevel.statusText + " Score: " + score + SCORE_PAD);
+		} else {
+			PS.statusText(currentLevel.statusText);
+		}
 
 		if (currentLevel.customMap) {
 			cellMap = currentLevel.customMap;
@@ -289,7 +303,7 @@ var G;
 				drawCell(x, j, fade);
 			}
 		} else {
-			if (cellMap[x][y] == -1) {
+			if (cellMap[x][y] < 0) {
 				PS.glyph(x, y, 0);
 			} else {
 				var cell = BEAD_TYPES[cellMap[x][y]]
@@ -299,7 +313,7 @@ var G;
 			if (fade) {
 				if (PS.fade(x, y).rate == 0) {
 					PS.fade(x, y, 0);
-					PS.color(x, y, STYLE.FADE_COLOR);
+					PS.color(x, y, fade);
 					PS.fade(x, y, STYLE.FADE_TIME, {
 						onEnd: function(x, y) {
 							PS.fade(x, y, 0);
@@ -342,8 +356,17 @@ var G;
 				delete validTypes[cellMap[x][y - 1]];
 			}
 			var available = Object.keys(validTypes);
-			cellMap[x][y] = available[PS.random(available.length) - 1];
-			drawCell(x, y, true);
+			if (available.length > 0) {
+				cellMap[x][y] = available[PS.random(available.length) - 1];
+			} else {
+				cellMap[x][y] = -PS.random(22222222222222);
+			}
+			// Check if in tutorial level, if yes, don't fade drop in
+			if (levelIndex >= TUTORIAL_COUNT) {
+				drawCell(x, y, STYLE.FADE_COLOR);
+			} else {
+				drawCell(x, y);
+			}
 		}
 	}
 
@@ -408,17 +431,18 @@ var G;
 
 	function clearMarkedCells() {
 		for (var cell of markedForClear) {
+			var fadeColor = BEAD_TYPES[cellMap[cell % width][Math.floor(cell / width)]].color;
 			cellMap[cell % width][Math.floor(cell / width)] = -1;
-			drawCell(cell % width, Math.floor(cell / width), true);
+			drawCell(cell % width, Math.floor(cell / width), fadeColor);
 		}
 		// Incrase score based on amount cleared
-
+		var ret = markedForClear.length;
 		if (markedForClear.length > 0) {
 			PS.dbEvent(DB_NAME, "Cleared N cells", markedForClear.length);
 			if (combo > 1) {
 				PS.dbEvent(DB_NAME, "at combo level", combo);
 			}
-			console.log("Score gained: N * 2 ^ C = " + markedForClear.length + " * 2 ^ " + combo + " = " + markedForClear.length * (1 << combo));
+			console.log("Score gained: N ^ 2 * 2 ^ C = " + markedForClear.length + " ^ 2 * 2 ^ " + combo + " = " + markedForClear.length * markedForClear.length * (1 << combo));
 
 			if (combo > 0) {
 				PS.audioPlay( SOUND_COMBO, SOUND_OPTIONS );
@@ -426,38 +450,41 @@ var G;
 				PS.audioPlay( SOUND_CLEAR, SOUND_OPTIONS );
 			}
 
-			score += markedForClear.length * (1 << combo);
+			score += markedForClear.length * markedForClear.length * (1 << combo);
 			combo++;
 			controlsLocked = STYLE.CLEAR_DELAY;
 			if (score >= currentLevel.clearToNext) {
 				controlsLocked = STYLE.CLEAR_DELAY;
-				if (completion_text_displayed) {
-					PS.statusText("Score: " + score + SCORE_PAD);
+				if (completion_text_displayed && levelIndex >= TUTORIAL_COUNT) {
+					PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
 				} else {
 					PS.statusText(COMPLETION_TEXT[PS.random(COMPLETION_TEXT.length) - 1]);
 					completion_text_displayed = true;
 				}
 			} else {
-				PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
+				if (levelIndex >= TUTORIAL_COUNT) {
+					PS.statusText("Score: " + score + SCORE_PAD + " out of " + currentLevel.clearToNext + SCORE_PAD);
+				}
 			}
 		} else {
 			combo = 0; // Start at combo = 0 so base multiplier is 1.
 			// Clearing is done. Determine whether to move to next level
 			if (score >= currentLevel.clearToNext) {
 				// Delay the level change until we finish dropping tiles
-				if (!last_dropped && levelIndex > 2) {
+				if (!last_dropped && levelIndex >= TUTORIAL_COUNT) {
 					last_dropped = true;
 					controlsLocked = STYLE.LEVEL_DELAY;
 				} else {
 					last_dropped = false;
 					completion_text_displayed = false;
-					levelIndex++;
+					while (score >= LEVEL_DATA[++levelIndex].clearToNext) {}
 					loadLevel();
 				}
 			}
 		}
 
 		markedForClear = [];
+		return ret;
 	}
 
 	function dropRows() {
@@ -492,19 +519,26 @@ var G;
 	var activeX = -1, activeY = -1, targetX = -1, targetY = -1;
 
 	// Swap target and active cells
+	// Returns -1 if no swap, otherwise returns cleared cells from resulting matches
 	function swap() {
 		if (targetX < 0 || activeX < 0) {
-			return;
+			return -1;
 		}
 		var temp = cellMap[activeX][activeY];
 		cellMap[activeX][activeY] = cellMap[targetX][targetY];
 		cellMap[targetX][targetY] = temp;
 		PS.audioPlay( SOUND_SWAP, SOUND_OPTIONS );
-		drawCell(activeX, activeY, true);
-		drawCell(targetX, targetY, true);
 		findMatches(activeX, activeY);
 		findMatches(targetX, targetY);
-		clearMarkedCells();
+		var clearedCells = clearMarkedCells();
+		if (clearedCells > 0) {
+			drawCell(activeX, activeY);
+			drawCell(targetX, targetY);
+		} else {
+			drawCell(activeX, activeY, STYLE.FADE_COLOR);
+			drawCell(targetX, targetY, STYLE.FADE_COLOR);
+		}
+		return clearedCells;
 	}
 
 	function clearActive() {
@@ -586,11 +620,13 @@ var G;
 			PS.borderColor ( x, y, STYLE.HOVER.COLOR_ACTIVE );
 		},
 		release: function(x, y) {
-			swap();
+			var result = swap();
 			clearActive();
 			clearTarget();
-			PS.borderColor ( x, y, STYLE.HOVER.COLOR );
-			PS.border ( x, y, STYLE.HOVER.THICKNESS );
+			if (result <= 0) {
+				PS.borderColor ( x, y, STYLE.HOVER.COLOR );
+				PS.border ( x, y, STYLE.HOVER.THICKNESS );
+			}
 		},
 		enter: function(x, y) {
 			if (controlsLocked > 0) {
