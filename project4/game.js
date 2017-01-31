@@ -341,7 +341,7 @@ var G;
 	}
 
 	// Matching functions
-	var markedForClear = [];
+	var markedForClear = {};
 
 	// Supports PS.ALL
 	function findMatches(x, y) {
@@ -357,39 +357,29 @@ var G;
 		} else {
 			var selfType = cellMap[x][y];
 			// Finds all horizontal and vertical matches involving cell at (x, y)
-			var checkCells = [x + y * width]
-			var horizontal = 1;
+			var matchingCells = [[x, y]];
 			for (var i = x + 1; i < width && cellMap[i][y] == selfType; i++) {
-				horizontal++;
-				checkCells.push(i + y * width)
+				matchingCells.push([i, y])
 			}
 			for (var i = x - 1; i >= 0 && cellMap[i][y] == selfType; i--) {
-				horizontal++;
-				checkCells.push(i + y * width)
+				matchingCells.push([i, y])
 			}
-			if (horizontal >= 3) {
-				for (var to_add of checkCells) {
-					if (markedForClear.indexOf(to_add) == -1) {
-						markedForClear.push(to_add);
-					}
+			if (matchingCells.length >= 3) {
+				for (var cell of matchingCells) {
+					markedForClear[cell] = true;
 				}
 			}
 
-			var checkCells = [x + y * width]
-			var vertical = 1;
+			var matchingCells = [[x, y]]
 			for (var j = y + 1; j < height && cellMap[x][j] == selfType; j++) {
-				vertical++;
-				checkCells.push(x + j * width)
+				matchingCells.push([x, j])
 			}
 			for (var j = y - 1; j >= 0 && cellMap[x][j] == selfType; j--) {
-				vertical++;
-				checkCells.push(x + j * width)
+				matchingCells.push([x, j])
 			}
-			if (vertical >= 3) {
-				for (var to_add of checkCells) {
-					if (markedForClear.indexOf(to_add) == -1) {
-						markedForClear.push(to_add);
-					}
+			if (matchingCells.length >= 3) {
+				for (var cell of matchingCells) {
+					markedForClear[cell] = true;
 				}
 			}
 		}
@@ -400,19 +390,21 @@ var G;
 	var completion_text_displayed = false;
 
 	function clearMarkedCells() {
-		for (var cell of markedForClear) {
-			var fadeColor = BEAD_TYPES[cellMap[cell % width][Math.floor(cell / width)]].color;
-			cellMap[cell % width][Math.floor(cell / width)] = -1;
-			drawCell(cell % width, Math.floor(cell / width), fadeColor);
+		for (var cell of Object.keys(markedForClear)) {
+			var x = parseInt(cell.split(',')[0]);
+			var y = parseInt(cell.split(',')[1]);
+			var fadeColor = BEAD_TYPES[cellMap[x][y]].color;
+			cellMap[x][y] = -1;
+			drawCell(x, y, fadeColor);
 		}
 		// Incrase score based on amount cleared
-		var ret = markedForClear.length;
-		if (markedForClear.length > 0) {
-			PS.dbEvent(DB_NAME, "Cleared N cells", markedForClear.length);
+		var numCleared = Object.keys(markedForClear).length;
+		if (numCleared > 0) {
+			PS.dbEvent(DB_NAME, "Cleared N cells", numCleared);
 			if (combo > 1) {
 				PS.dbEvent(DB_NAME, "at combo level", combo);
 			}
-			console.log("Score gained: N ^ 2 * 2 ^ C = " + markedForClear.length + " ^ 2 * 2 ^ " + combo + " = " + markedForClear.length * markedForClear.length * (1 << combo));
+			console.log("Score gained: N ^ 2 * 2 ^ C = " + numCleared + " ^ 2 * 2 ^ " + combo + " = " + numCleared * numCleared * (1 << combo));
 
 			if (combo > 0) {
 				PS.audioPlay( SOUND_COMBO, SOUND_OPTIONS );
@@ -420,7 +412,7 @@ var G;
 				PS.audioPlay( SOUND_CLEAR, SOUND_OPTIONS );
 			}
 
-			score += markedForClear.length * markedForClear.length * (1 << combo);
+			score += numCleared * numCleared * (1 << combo);
 			combo++;
 			controlsLocked = STYLE.CLEAR_DELAY;
 			if (score >= currentLevel.clearToNext) {
@@ -453,8 +445,8 @@ var G;
 			}
 		}
 
-		markedForClear = [];
-		return ret;
+		markedForClear = {};
+		return numCleared;
 	}
 
 	function dropRows() {
