@@ -45,7 +45,6 @@ var G;
 		CLEAR_DELAY: 8,
 		LEVEL_DELAY: 10
 	}
-	console.log(STYLE);
 
 	var SOUND_OPTIONS = {
 		autoplay: false,
@@ -63,7 +62,7 @@ var G;
 	var BEAD_TYPES = [
 		{ // Red Square
 			color: PS.COLOR_RED,
-			glyph: 0x2588,
+			glyph: 0x25FC,
 		},
 		{ // Light Blue Rhombus
 			color: 0x0080FF,
