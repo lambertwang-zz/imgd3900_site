@@ -49,6 +49,7 @@ var G;
 	var SOUND_CLEAR = "clear";
 	var SOUND_COMBO = "combo";
 	var SOUND_SWAP = "swap";
+	var SOUND_DROP = "drop";
 
 	var BEAD_TYPES = [
 		{ // Red Square
@@ -365,24 +366,12 @@ var G;
 				fillRandom(x, j);
 			}
 		} else {
-			var validTypes = {};
-			for (var i=0; i<activeTypes; i++) {
-				validTypes[i] = false;
+			var available = [];
+			for (var i = 0; i < activeTypes; i++) {
+				if (!findMatches(x, y, false, i)) {
+					available.push(i);
+				}
 			}
-			// Check neighbors
-			if (x < width - 1) {
-				delete validTypes[cellMap[x + 1][y]];
-			}
-			if (x > 0) {
-				delete validTypes[cellMap[x - 1][y]];
-			}
-			if (y < height - 1) {
-				delete validTypes[cellMap[x][y + 1]];
-			}
-			if (y > 0) {
-				delete validTypes[cellMap[x][y - 1]];
-			}
-			var available = Object.keys(validTypes);
 			if (available.length > 0) {
 				cellMap[x][y] = available[PS.random(available.length) - 1];
 			} else {
@@ -401,20 +390,25 @@ var G;
 	var markedForClear = {};
 
 	// Supports PS.ALL
-	function findMatches(x, y) {
+	function findMatches(x, y, clear = true, cellValue = undefined) {
+		var match_found = false;
 		if (x == PS.ALL) {
 			for (var i = 0; i < width; i++) {
-				findMatches(i, y);
+				if (findMatches(i, y)) {
+					match_found = true;
+				}
 			}
 			clearMarkedCells();
 		} else if (y == PS.ALL) {
 			for (var j = 0; j < height; j++) {
-				findMatches(x, j);
+				if (findMatches(x, j)) {
+					match_found = true;
+				}
 			}
 		} else {
-			var selfType = cellMap[x][y];
+			var selfType = cellValue ? cellValue : cellMap[x][y];
 			if (selfType < 0) {
-				return;
+				return match_found;
 			}
 			// Finds all horizontal and vertical matches involving cell at (x, y)
 			var matchingCells = [[x, y]];
@@ -425,8 +419,11 @@ var G;
 				matchingCells.push([i, y])
 			}
 			if (matchingCells.length >= 3) {
-				for (var cell of matchingCells) {
-					markedForClear[cell] = true;
+				match_found = true;
+				if (clear) {
+					for (var cell of matchingCells) {
+						markedForClear[cell] = true;
+					}
 				}
 			}
 
@@ -438,11 +435,15 @@ var G;
 				matchingCells.push([x, j])
 			}
 			if (matchingCells.length >= 3) {
-				for (var cell of matchingCells) {
-					markedForClear[cell] = true;
+				match_found = true;
+				if (clear) {
+					for (var cell of matchingCells) {
+						markedForClear[cell] = true;
+					}
 				}
 			}
 		}
+		return match_found;
 	}
 
 	var combo = 0;
@@ -537,6 +538,8 @@ var G;
 
 		if (!tileMoved) {
 			findMatches(PS.ALL, PS.ALL);
+		} else {
+			PS.audioPlay(SOUND_DROP, SOUND_OPTIONS);
 		}
 		return tileMoved;
 	}
@@ -707,13 +710,13 @@ var G;
 		// Initialize the game
 		// Called once at startup
 
-		init: function () {
-
+		init: function (system, options) {
 			// Preload & lock sounds
 			PS.audioLoad( SOUND_LEVEL, SOUND_OPTIONS );
 			PS.audioLoad( SOUND_CLEAR, SOUND_OPTIONS );
 			PS.audioLoad( SOUND_COMBO, SOUND_OPTIONS );
 			PS.audioLoad( SOUND_SWAP, SOUND_OPTIONS );
+			PS.audioLoad( SOUND_DROP, SOUND_OPTIONS );
 
 			// Initialize Database
 			PS.dbInit(DB_NAME);
