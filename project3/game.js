@@ -17,12 +17,6 @@ var G;
 	// Metrics and variables
 	var SCORE_PAD = "0";
 
-	function unloadEvent(e) {
-		PS.dbEvent(DB_NAME, "final score", score);
-		PS.dbSend(DB_NAME, "lwang5");
-		PS.dbSend(DB_NAME, "jctblackman");
-	}
-
 	// Takes h (0-360), s(0-1), and v(0-1)
 	// Returns an int containing an RGB value.
 	function hsvToRgb(h, s, v) {
@@ -613,15 +607,17 @@ var G;
 			clearActive();
 			clearTarget();
 		},
+		shutdown: function() {
+			PS.dbEvent(DB_NAME, "final score", score);
+			PS.dbSend(DB_NAME, "lwang5");
+			PS.dbSend(DB_NAME, "jctblackman");
+			PS.dbErase(DB_NAME);
+		},
 
 		// Initialize the game
 		// Called once at startup
 
 		init: function () {
-
-			// Hook window beforeunload event
-			window.addEventListener("beforeunload", unloadEvent);
-
 			// Preload & lock sounds
 			PS.audioLoad( SOUND_LEVEL, SOUND_OPTIONS );
 			PS.audioLoad( SOUND_CLEAR, SOUND_OPTIONS );
@@ -652,3 +648,4 @@ PS.release = G.release;
 PS.enter = G.enter;
 PS.exit = G.exit;
 PS.exitGrid = G.exitGrid;
+PS.shutdown = G.shutdown;
