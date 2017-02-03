@@ -531,8 +531,11 @@ var G;
 			drawCell(i, PS.ALL);
 
 			// Fade new cells from the top
-			for (var j = 0; j < 1 && j < height && cellMap[i][j] < 0; j ++) {
-				fillRandom(i, j);
+			if (cellMap[i][0] < 0) {
+				fillRandom(i, 0);
+			}
+			if (height > 1 && cellMap[i][1] < 0 && levelIndex >= TUTORIAL_COUNT) {
+				tileMoved = true;
 			}
 		}
 
