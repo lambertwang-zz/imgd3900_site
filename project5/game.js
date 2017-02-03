@@ -96,8 +96,74 @@ var G;
 	var COMPLETION_TEXT = [
 		"Good job!",
 		"Well done!",
-		"Nice work!",
-		"You're an expert!"
+		"Nice work.",
+		"You're an expert!",
+		"Great skills!",
+		"Your smile is contagious.",
+		"You look great today!",
+		"You're a smart cookie.",
+		"I bet you make babies smile.",
+		"You have impeccable manners.",
+		"I like your style.",
+		"You have the best laugh.",
+		"I appreciate you.",
+		"You are the most perfect you there is.",
+		"You are enough.",
+		"You're strong.",
+		"Your perspective is refreshing.",
+		"You're an awesome friend.",
+		"You light up the room.",
+		"You deserve a hug right now.",
+		"You should be proud of yourself.",
+		"You're more helpful than you realize.",
+		"You have a great sense of humor.",
+		"You've got all the right moves!",
+		"You're all that and a super-size bag of chips.",
+		"On a scale from 1 to 10, you're an 11.",
+		"You are brave.",
+		"You have the courage of your convictions.",
+		"Your eyes are breathtaking.",
+		"You are making a difference.",
+		"You're like sunshine on a rainy day.",
+		"You bring out the best in other people.",
+		"You're a great listener.",
+		"I bet you sweat glitter.",
+		"You were cool way before hipsters were cool.",
+		"That color is perfect on you.",
+		"Hanging out with you is always a blast.",
+		"You smell really good.",
+		"Being around you makes everything better!",
+		"Colors seem brighter when you're around.",
+		"You're wonderful.",
+		"Jokes are funnier when you tell them.",
+		"Your bellybutton is kind of adorable.",
+		"Your hair looks stunning.",
+		"You're one of a kind!",
+		"You're inspiring.",
+		"Our community is better because you're in it.",
+		"You have the best ideas.",
+		"You're a candle in the darkness.",
+		"You're a great example to others.",
+		"You always know just what to say.",
+		"You could survive a Zombie apocalypse.",
+		"You're more fun than bubble wrap.",
+		"When you make a mistake, you fix it.",
+		"You're great at figuring stuff out.",
+		"Your voice is magnificent.",
+		"You're like a breath of fresh air.",
+		"You're so thoughtful.",
+		"Your creative potential seems limitless.",
+		"Your name suits you to a T.",
+		"You're irresistible when you blush.",
+		"You seem to really know who you are.",
+		"Any team would be lucky to have you on it.",
+		"I bet you do the crossword puzzle in ink.",
+		"Babies and small animals probably love you.",
+		"There's ordinary, and then there's you.",
+		"You're someone's reason to smile.",
+		"You have a good head on your shoulders.",
+		"You're really something special.",
+		"You're a gift to those around you."
 	];
 
 	var TUTORIAL_COUNT = 3;
@@ -116,7 +182,7 @@ var G;
 			height: 3,
 			clearToNext: -27,
 			activeTypes: 0,
-			customMap: [[2, 3, 2], [3, 2, 3]],
+			customMap: [[2, 3, 3], [2, 2, 3]],
 			statusText: "Make cool combos!"
 		},
 		{
@@ -491,7 +557,7 @@ var G;
 		findMatches(activeX, activeY);
 		findMatches(targetX, targetY);
 		if (levelIndex == 0) {
-			PS.statusText("Match 3 to clear cells!");
+			PS.statusText("Match 3 in a row to clear!");
 		}
 		var clearedCells = clearMarkedCells();
 		if (clearedCells > 0) {
@@ -552,10 +618,12 @@ var G;
 		if (targetX != new_targetX && targetY != new_targetY) {
 			clearTarget();
 			// Set new target value
-			targetX = new_targetX;
-			targetY = new_targetY;
-			PS.border ( targetX, targetY, STYLE.HOVER.THICKNESS_ACTIVE );
-			PS.borderColor ( targetX, targetY, STYLE.HOVER.COLOR_ACTIVE );
+			if (cellMap[new_targetX][new_targetY] >= 0) {
+				targetX = new_targetX;
+				targetY = new_targetY;
+				PS.border ( targetX, targetY, STYLE.HOVER.THICKNESS_ACTIVE );
+				PS.borderColor ( targetX, targetY, STYLE.HOVER.COLOR_ACTIVE );
+			}
 		}
 	}
 
@@ -579,18 +647,26 @@ var G;
 			if (controlsLocked > 0) {
 				return;
 			}
-			activeX = x;
-			activeY = y;
-			PS.border ( x, y, STYLE.HOVER.THICKNESS_ACTIVE );
-			PS.borderColor ( x, y, STYLE.HOVER.COLOR_ACTIVE );
+			if (cellMap[x][y] >= 0) {
+				if (!(levelIndex == 2 && y >= 2)) {
+					activeX = x;
+					activeY = y;
+					PS.border ( x, y, STYLE.HOVER.THICKNESS_ACTIVE );
+					PS.borderColor ( x, y, STYLE.HOVER.COLOR_ACTIVE );
+				}
+			}
 		},
 		release: function(x, y) {
 			var result = swap();
 			clearActive();
 			clearTarget();
 			if (result <= 0) {
-				PS.borderColor ( x, y, STYLE.HOVER.COLOR );
-				PS.border ( x, y, STYLE.HOVER.THICKNESS );
+				if (cellMap[x][y] >= 0) {
+					if (!(levelIndex == 2 && y >= 2)) {
+						PS.borderColor ( x, y, STYLE.HOVER.COLOR );
+						PS.border ( x, y, STYLE.HOVER.THICKNESS );
+					}
+				}
 			}
 		},
 		enter: function(x, y) {
@@ -600,8 +676,12 @@ var G;
 			if (activeX >= 0) {
 				setTarget(x, y);
 			} else {
-				PS.borderColor ( x, y, STYLE.HOVER.COLOR );
-				PS.border ( x, y, STYLE.HOVER.THICKNESS );
+				if (cellMap[x][y] >= 0) {
+					if (!(levelIndex == 2 && y >= 2)) {
+						PS.borderColor ( x, y, STYLE.HOVER.COLOR );
+						PS.border ( x, y, STYLE.HOVER.THICKNESS );
+					}
+				}
 			}
 		},
 		exit: function(x, y) {
