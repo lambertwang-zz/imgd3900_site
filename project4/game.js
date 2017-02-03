@@ -17,15 +17,6 @@ var G;
 	// Metrics and variables
 	var SCORE_PAD = "0";
 
-	function unloadEvent(e) {
-		PS.dbEvent(DB_NAME, "final score", score);
-		// Only dbSend if hosted, not locally testing
-		if (window.location.hostname == "users.wpi.edu") {
-			PS.dbSend(DB_NAME, "lwang5");
-			PS.dbSend(DB_NAME, "jctblackman");
-		}
-	}
-
 	var MAX_WIDTH = 10;
 	var MAX_HEIGHT = 10;
 	var DB_NAME = "three_bead_telemetry";
@@ -611,14 +602,20 @@ var G;
 			clearActive();
 			clearTarget();
 		},
+		shutdown: function() {
+			PS.dbEvent(DB_NAME, "final score", score);
+			// Only dbSend if hosted, not locally testing
+			if (window.location.hostname == "users.wpi.edu") {
+				PS.dbSend(DB_NAME, "lwang5");
+				PS.dbSend(DB_NAME, "jctblackman");
+			}
+			PS.dbErase(DB_NAME);
+		},
 
 		// Initialize the game
 		// Called once at startup
 
 		init: function () {
-
-			// Hook window beforeunload event
-			window.addEventListener("beforeunload", unloadEvent);
 
 			// Preload & lock sounds
 			PS.audioLoad( SOUND_LEVEL, SOUND_OPTIONS );
@@ -650,3 +647,4 @@ PS.release = G.release;
 PS.enter = G.enter;
 PS.exit = G.exit;
 PS.exitGrid = G.exitGrid;
+PS.shutdown = G.shutdown;
