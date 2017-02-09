@@ -14,6 +14,7 @@ var G;
 ( function () {
 	"use strict";
 
+	// Draws collision map on screen.
 	var DEBUG_DRAW = false;
 
 	var WIDTH = 32;
@@ -46,29 +47,6 @@ var G;
 
 	// Sounds created using http://www.bfxr.net/ available under the Apache 2.0 License
 
-	var LEVEL_DIR = "levels/";
-	var LEVEL_DATA = [
-		{
-			imageName: "level1.png",
-			startLocation: {
-				x: 10,
-				y: 10
-			}
-		}
-	];
-
-	var SPRITE_DIR = "sprites/";
-	var SPRITE_DATA = {
-		merlin: {
-			imageName: "merlin.png",
-			imageData: null
-		},
-		troll: {
-			imageName: "troll.png",
-			imageData: null
-		}
-	};
-	
 	/**
 	 * For some reason, the built-in alpha compositing 
 	 * is not working so I'm writing my own.
@@ -101,7 +79,6 @@ var G;
 		setPixel(newPixel, x, y);
 	};
 
-
 	function imageBlit(image, screenX, screenY, imageX = 0, imageY = 0) {
 		if (image.pixelSize < 3) {
 			console.log("Error: imageBlit() requires at least 3 channels");
@@ -133,6 +110,41 @@ var G;
 			pixels[i * 3 + 2] = 0;
 		}
 	}
+
+	var SPRITE_DIR = "sprites/";
+	var SPRITE_DATA = {
+		merlin: {
+			imageName: "merlin.png",
+			imageData: null
+		},
+		troll: {
+			imageName: "troll.png",
+			imageData: null
+		}
+	};
+	
+	var LEVEL_DIR = "levels/";
+	var LEVEL_DATA = [
+		{
+			imageName: "level1.png",
+			startLocation: {
+				x: 10,
+				y: 10
+			},
+			objects: [
+				{
+					image: "troll", 
+					x: 10, 
+					y: 10, 
+					tickFunction: null,
+					width: 9,
+					height: 11,
+					widthOffset: 3,
+					heightOffset: 1
+				}
+			]
+		}
+	];
 
 	/** Game initialization and loadingfunctions */
 
@@ -172,11 +184,22 @@ var G;
 	};
 
 	function loadLevel() {
+		levelImage = null;
 		PS.imageLoad(
 			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName, 
 			onLevelImageLoaded, 4);
-		player = new GameObject("merlin", 0, 0, playerTick);
-		new GameObject("troll", 10, 10, null);
+		objects = {};
+		objectIdIterator = 0;
+		player = new GameObject({
+			image: "merlin", 
+			x: 0,
+			y: 0,
+			width: 4,
+			tickFunction: playerTick
+		});
+		for (var obj of LEVEL_DATA[levelIndex].objects) {
+			new GameObject(obj);
+		}
 	};
 
 	function onLevelImageLoaded(image) {
@@ -198,23 +221,35 @@ var G;
 	var objectIdIterator = 0;
 
 	class GameObject {
-		constructor(image, x, y, tickFunction = null) {
-			this.image = SPRITE_DATA[image];
-			this.x = x;
-			this.y = y;
-			this.xPrev = x;
-			this.yPrev = y;
-			if (tickFunction) {
-				this.tickFunction = tickFunction.bind(this);
+		constructor(objectData) {
+			/** User settable parameters */
+			this.x = 0;
+			this.y = 0;
+			this.width = -1;
+			this.height = -1;
+			this.widthOffset = 0;
+			this.heightOffset = 0;
+			this.solid = false;
+			/** End of user settable parameters */
+			for (var key of Object.keys(objectData)) {
+				console.log(key);
+				this[key] = objectData[key];
 			}
+
+			console.log(this.image);
+			if (this.image) {
+				this.image = SPRITE_DATA[this.image];
+			}
+			if (this.tickFunction) {
+				this.tickFunction = this.tickFunction.bind(this);
+			}
+			this.xPrev = this.x;
+			this.yPrev = this.y;
 
 			this.xStep = 0.0;
 			this.yStep = 0.0;
 			this.xVel = 0.0;
 			this.yVel = 0.0;
-			this.solid = false;
-			this.width = 0;
-			this.height = 0;
 
 			this.id = objectIdIterator;
 			objects[objectIdIterator] = this;
@@ -232,15 +267,19 @@ var G;
 			// Update collision map
 			// Only if image data is available
 			if (this.image.imageData && levelImage) {
-				this.width = this.image.imageData.width;
-				this.height = this.image.imageData.height;
-				for (var i = Math.max(0, this.xPrev); i < Math.min(levelImage.width, this.xPrev + this.width); i++) {
+				if (this.width == -1) {
+					this.width = this.image.imageData.width;
+				}
+				if (this.height == -1) {
+					this.height = this.image.imageData.height;
+				}
+				for (var i = Math.max(0, this.xPrev + this.widthOffset); i < Math.min(levelImage.width, this.xPrev + this.widthOffset + this.width); i++) {
 					for (var j = Math.max(0, this.yPrev); j < Math.min(levelImage.height, this.yPrev + this.height); j++) {
 						delete objectCollisionMap[i + j * levelImage.width][this.id];
 					}
 				}
-				for (var i = Math.max(0, this.x); i < Math.min(levelImage.width, this.x + this.width); i++) {
-					for (var j = Math.max(0, this.y); j < Math.min(levelImage.height, this.y + this.height); j++) {
+				for (var i = Math.max(0, this.x + this.widthOffset); i < Math.min(levelImage.width, this.x + this.widthOffset + this.width); i++) {
+					for (var j = Math.max(0, this.y + this.heightOffset); j < Math.min(levelImage.height, this.y + this.heightOffset + this.height); j++) {
 						objectCollisionMap[i + j * levelImage.width][this.id] = true;
 					}
 				}
@@ -262,7 +301,7 @@ var G;
 			this.yStep += d_y;
 			while (this.xStep > 1) {
 				this.xStep--;
-				var edge = checkCollision(this.x + this.width, this.y, 1, this.height);
+				var edge = checkCollision(this.x + this.width + this.widthOffset, this.y + this.heightOffset, 1, this.height);
 				if (Object.keys(edge).length > 0 || this.x + this.width >= levelImage.width) {
 					this.xStep = 0;
 				} else {
@@ -271,7 +310,7 @@ var G;
 			}
 			while (this.xStep < -1) {
 				this.xStep++;
-				var edge = checkCollision(this.x - 1, this.y, 1, this.height);
+				var edge = checkCollision(this.x - 1 + this.widthOffset, this.y + this.heightOffset, 1, this.height);
 				if (Object.keys(edge).length > 0 || this.x <= 0) {
 					this.xStep = 0;
 				} else {
@@ -280,7 +319,7 @@ var G;
 			}
 			while (this.yStep > 1) {
 				this.yStep--;
-				var edge = checkCollision(this.x, this.y + this.height, this.width, 1);
+				var edge = checkCollision(this.x + this.widthOffset, this.y + this.height + this.heightOffset, this.width, 1);
 				if (Object.keys(edge).length > 0 || this.y + this.heighy >= levelImage.height) {
 					this.yStep = 0;
 				} else {
@@ -289,7 +328,7 @@ var G;
 			}
 			while (this.yStep < -1) {
 				this.yStep++;
-				var edge = checkCollision(this.x, this.y - 1, this.width, 1);
+				var edge = checkCollision(this.x + this.widthOffset, this.y - 1 + this.heightOffset, this.width, 1);
 				if (Object.keys(edge).length > 0 || this.y <= 0) {
 					this.yStep = 0;
 				} else {
@@ -322,9 +361,6 @@ var G;
 	/** Rendering functions */
 
 	function drawLevel() {
-		if (!levelImage) {
-			return;
-		}
 		imageBlit(
 			levelImage, 
 			WIDTH / 2 - player.x, 
@@ -332,9 +368,6 @@ var G;
 	}
 
 	function drawObject(obj) {
-		if (!obj.image.imageData) {
-			return;
-		}
 		imageBlit(
 			obj.image.imageData,
 			WIDTH / 2 + obj.x - player.x,
@@ -351,29 +384,44 @@ var G;
 	}
 
 	function playerTick() {
+		// Check for ground
+		var ground = checkCollision(this.x + this.widthOffset, this.y + this.height + this.heightOffset, this.width, 1);
+		
 		if (controls.left) {
-			this.move(-.3, 0);
+			this.xVel = -.3;
 		} else if (controls.right) {
-			this.move(0.3, 0);
-		} 
-		if (controls.up) {
-			this.move(0, -.3);
-		} else if (controls.down) {
-			this.move(0, 0.3);
+			this.xVel = .3;
+		} else {
+			this.xVel = 0;
+		}
+
+		if (Object.keys(ground).length > 0) {
+			// On ground or standing on something
+			this.yVel = 0;
+			if (controls.up) {
+				this.yVel = -1;
+			}
+		} else {
+			// In air
+			this.yVel += 0.07;
+			if (this.yVel > 1) {
+				this.yVel = 1;
+			}
 		}
 	}
 
 	function tick() {
-		// Update state
-		for (var obj of Object.keys(objects)) {
-			objects[obj].tick();
-		}
+		if (levelImage) {
+			// Update state
+			for (var obj of Object.keys(objects)) {
+				objects[obj].tick();
+			}
 
-		drawLevel();
-		
-		// Draw all objects
-		for (var obj of Object.keys(objects)) {
-			drawObject(objects[obj]);
+			// Render level and objects
+			drawLevel();
+			for (var obj of Object.keys(objects)) {
+				drawObject(objects[obj]);
+			}
 		}
 
 		flushPixels();
