@@ -324,6 +324,7 @@ var G;
 					var temp = this.tool;
 					if (targets[obj].tool) {
 						this.tool = new targets[obj].tool();
+ 						PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
 						cycleTexts(this.tool.statusText);
 					} else {
 						this.tool = null;
@@ -456,6 +457,7 @@ var G;
 	class Staff extends GameObject {
 		constructor(params) {
 			super(params);
+			this.type = "staff";
 			this.image = SPRITE_DATA.staff;
 			this.ephemeral = true;
 
@@ -515,6 +517,7 @@ var G;
 	class Balloon extends GameObject {
 		constructor(params) {
 			super(params);
+			this.type = "balloon";
 			this.image = SPRITE_DATA.balloon;
 			this.ephemeral = true;
 
@@ -948,6 +951,7 @@ var G;
 	};
 
 	function loadLevel() {
+ 		PS.dbEvent(DB_NAME, "level_loaded", levelIndex);
 		levelImage = null;
 		PS.imageLoad(
 			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName, 
@@ -1167,8 +1171,6 @@ var G;
 		exitGrid: function() {
 		},
 		shutdown: function() {
-			return;
-			PS.dbEvent(DB_NAME, "final score", score);
 			// Only dbSend if hosted, not locally testing
 			if (window.location.hostname == "users.wpi.edu") {
 				PS.dbSend(DB_NAME, "lwang5");
@@ -1184,7 +1186,7 @@ var G;
 			// Preload & lock sounds
 
 			// Initialize Database
-			// PS.dbInit(DB_NAME);
+ 			PS.dbInit(DB_NAME, { login : false });
 
 			initGame();
 			loadLevel();
