@@ -15,10 +15,11 @@ var G;
 	"use strict";
 
 	// Draws collision map on screen.
-	var DEBUG_DRAW = true;
+	var DEBUG_DRAW = false;
 
 	/** Object related functions */
 	var objects = {};
+	var objectDeletionQueue = {};
 	var objectIdIterator = 0;
 
 	class GameObject {
@@ -31,10 +32,16 @@ var G;
 			this.height = -1;
 			this.widthOffset = 0;
 			this.heightOffset = 0;
+			// If true does not have any collision map
+			this.ephemeral = false;
+			// If true cannot move through other objects
 			this.solid = false;
+			this.type = null;
 			/** End of user settable parameters */
-			for (var key of Object.keys(objectData)) {
-				this[key] = objectData[key];
+			if (objectData) {
+				for (var key of Object.keys(objectData)) {
+					this[key] = objectData[key];
+				}
 			}
 
 			if (this.image) {
@@ -66,7 +73,7 @@ var G;
 
 			// Update collision map
 			// Only if image data is available
-			if (this.image.imageData && levelImage) {
+			if (this.image && this.image.imageData && levelImage) {
 				if (this.width == -1) {
 					this.width = this.image.imageData.width;
 				}
@@ -74,10 +81,8 @@ var G;
 					this.height = this.image.imageData.height;
 				}
 				// Clear collision map
-				for (var i = Math.max(0, this.xPrev); i < Math.min(levelImage.width, this.xPrev + this.image.width); i++) {
-					for (var j = Math.max(0, this.yPrev); j < Math.min(levelImage.height, this.yPrev + this.image.height); j++) {
-						delete objectCollisionMap[i + j * levelImage.width][this.id];
-					}
+				if (!this.ephemeral) {
+					this.clearCollisionMap();
 				}
 
 				this.offsetWidthEff = (this.spriteInverted ? this.image.width - this.width : this.widthOffset);
@@ -89,9 +94,12 @@ var G;
 					top: Math.max(0, this.y + this.heightOffset),
 					bot: Math.min(levelImage.height, this.y + this.heightOffset + this.height)
 				};
-				for (var i = this.boundingBox.left; i < this.boundingBox.right; i++) {
-					for (var j = this.boundingBox.top; j < this.boundingBox.bot; j++) {
-						objectCollisionMap[i + j * levelImage.width][this.id] = true;
+				// Update collision map
+				if (!this.ephemeral) {
+					for (var i = this.boundingBox.left; i < this.boundingBox.right; i++) {
+						for (var j = this.boundingBox.top; j < this.boundingBox.bot; j++) {
+							objectCollisionMap[i + j * levelImage.width][this.id] = true;
+						}
 					}
 				}
 			}
@@ -100,7 +108,18 @@ var G;
 			this.yPrev = this.y;
 		}
 		
+		clearCollisionMap() {
+			for (var i = Math.max(0, this.xPrev); i < Math.min(levelImage.width, this.xPrev + this.image.width); i++) {
+				for (var j = Math.max(0, this.yPrev); j < Math.min(levelImage.height, this.yPrev + this.image.height); j++) {
+					delete objectCollisionMap[i + j * levelImage.width][this.id];
+				}
+			}
+		}
+
 		computeCollision() {
+			if (this.ephemeral) {
+				return;
+			}
 			// Compute collision bounding box
 			var collisions = checkCollision(
 				this.boundingBox.left - 1, 
@@ -109,13 +128,15 @@ var G;
 				this.boundingBox.bot - this.boundingBox.top + 2);
 			for (var objId of Object.keys(collisions)) {
 				if (objects[objId] && objects[objId] != this) {
-					console.log("Collided with " + objects[objId]);
 					this.collide(objects[objId]);
 				}
 			}
 		}
 
 		draw() {
+			if (!this.image) {
+				return;
+			}
 			if (this.image.frames) {
 				imageBlit(
 					this.image.imageData,
@@ -151,6 +172,7 @@ var G;
 			if (this.yStep * d_y < 0) {
 				this.yStep = 0;
 			}
+			var stopped = false;
 			this.xStep += d_x;
 			this.yStep += d_y;
 			while (this.xStep > 1) {
@@ -158,6 +180,7 @@ var G;
 				var edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
 				if (Object.keys(edge).length > 0 || this.x + this.width >= levelImage.width) {
 					this.xStep = 0;
+					stopped = true;
 				} else {
 					this.x++;
 				}
@@ -167,6 +190,7 @@ var G;
 				var edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
 				if (Object.keys(edge).length > 0 || this.x <= 0) {
 					this.xStep = 0;
+					stopped = true;
 				} else {
 					this.x--;
 				}
@@ -176,27 +200,30 @@ var G;
 				var edge = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
 				if (Object.keys(edge).length > 0 || this.y + this.heighy >= levelImage.height) {
 					this.yStep = 0;
+					stopped = true;
 				} else {
 					this.y++;
 				}
 			}
 			while (this.yStep < -1) {
 				this.yStep++;
-				var edge = checkCollision(this.boundingBox.left, this.boundingBox.bot - 1, this.width, 1);
+				var edge = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
 				if (Object.keys(edge).length > 0 || this.y <= 0) {
 					this.yStep = 0;
+					stopped = true;
 				} else {
 					this.y--;
 				}
 			}
+			return stopped;
 		}
 
 		tick() {
-			// Implemented in subclass
+			// Implemented in subclasses
 		}
 
 		collide() {
-			// Implemented in subclass
+			// Implemented in subclasses
 		}
 	}
 
@@ -206,34 +233,51 @@ var G;
 	class Merlin extends GameObject {
 		constructor(objectData) {
 			super(objectData);
-			player = this;
+			this.type = "merlin";
+			this.image = SPRITE_DATA.merlin;
 			this.frameSpeed = 15;
+			this.width = 4;
+
+			player = this;
+			this.stunned = 0;
+			this.health = 2;
+			this.tool = new Staff();
+			this.alt_tool = null;
 		}
 
 		tick() {
 			// Check for ground
-			var ground = checkCollision(this.x + this.widthOffset, this.y + this.height + this.heightOffset, this.width, 1);
-			
-			if (controls.left) {
-				this.image = SPRITE_DATA.merlin_walk;
-				this.spriteInverted = true;
-				this.xVel = -.3;
-			} else if (controls.right) {
-				this.image = SPRITE_DATA.merlin_walk;
-				this.spriteInverted = false;
-				this.xVel = .3;
-			} else {
-				this.image = SPRITE_DATA.merlin;
-				this.xVel = 0;
+			if (!this.boundingBox) {
+				return;
 			}
+			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
+			
+			if (this.stunned <= 0) {
+				if (controls.left) {
+					this.image = SPRITE_DATA.merlin_walk;
+					this.spriteInverted = true;
+					this.xVel = -.3;
+				} else if (controls.right) {
+					this.image = SPRITE_DATA.merlin_walk;
+					this.spriteInverted = false;
+					this.xVel = .3;
+				} else {
+					this.image = SPRITE_DATA.merlin;
+					this.xVel = 0;
+				}
 
-			if (Object.keys(ground).length > 0) {
-				// On ground or standing on something
-				this.yVel = 0;
-				if (controls.up) {
-					this.yVel = -1;
+				if (Object.keys(ground).length > 0) {
+					// On ground or standing on something
+					this.yVel = 0;
+					if (controls.up) {
+						this.yVel = -1;
+					}
 				}
 			} else {
+				this.stunned--;
+			}
+
+			if (Object.keys(ground).length <= 0) {
 				// In air
 				this.yVel += 0.07;
 				if (this.yVel > 1) {
@@ -241,18 +285,49 @@ var G;
 				}
 			}
 		}
+
+		collide(other) {
+			if (other.type == "troll") {
+				console.log("Ack! Troll");
+				this.yVel = -1.5;
+				if (other.x > this.x) {
+					this.xVel = -.5;
+					this.move(-1, -1);
+				} else {
+					this.xVel = .5;
+					this.move(1, -1);
+				}
+				this.stunned = 30;
+			}
+		}
+
+		magic(targets) {
+			if (this.tool) {
+				this.tool.cast(targets);
+			}
+		}
 	}
 
 	class Troll extends GameObject {
 		constructor(objectData) {
 			super(objectData);
+			this.type = "troll";
+			this.image = SPRITE_DATA.troll;
 			this.frameSpeed = 20;
+			
+			this.width = 9;
+			this.height = 11;
+			this.widthOffset = 0;
+			this.heightOffset = 0;
 		}
 
 		tick() {
 			return;
 			// Check for ground
-			var ground = checkCollision(this.x + this.widthOffset, this.y + this.height + this.heightOffset, this.width, 1);
+			if (!this.boundingBox) {
+				return;
+			}
+			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
 			
 			if (controls.left) {
 				this.image = SPRITE_DATA.troll_walk;
@@ -283,6 +358,93 @@ var G;
 		}
 	}
 
+
+	class Box extends GameObject {
+		constructor(objectData) {
+			super(objectData);
+			this.type = "box";
+			this.image = SPRITE_DATA.box;
+			this.frameSpeed = 10;
+		}
+
+		tick() {
+			// Check for ground
+			if (!this.boundingBox) {
+				return;
+			}
+			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
+
+			if (Object.keys(ground).length <= 0) {
+				// In air
+				this.yVel += 0.07;
+				if (this.yVel > 1) {
+					this.yVel = 1;
+				}
+			} else {
+				for (var obj of Object.keys(ground)) {
+					if (objects[obj] && objects[obj].type == "troll") {
+						console.log("Crushing troll?");
+						objectDeletionQueue[obj] = ground[obj];
+					}
+				}
+			}
+		}
+	}
+
+	class Staff extends GameObject {
+		constructor(params) {
+			super(params);
+			this.image = SPRITE_DATA.staff;
+			this.ephemeral = true;
+
+			this.target = null;
+			this.holder = player;
+		}
+
+		tick() {
+			if (this.target) {
+				if (this.target.move(
+						controls.mouseX + player.x - WIDTH/2 - 2 - this.target.x, 
+						controls.mouseY + player.y - HEIGHT/2 - 3 - this.target.y)) {
+					this.drop();
+				}
+			}
+		}
+
+		draw() {
+			// Overloaded draw function
+			// Follows merlin
+			this.spriteInverted = this.holder.spriteInverted;
+			this.x = this.holder.x + (this.spriteInverted ? -2 : 5);
+			this.y = this.holder.y;
+
+			super.draw();
+		}
+
+		cast (targets) {
+			if (this.target == null) {
+				for (var obj of Object.keys(targets)) {
+					if (targets[obj] && targets[obj].type == "box") {
+						this.target = targets[obj];
+						this.target.image = SPRITE_DATA.box_active;
+						this.image = SPRITE_DATA.staff_active;
+						return;
+					}
+				}
+			} else {
+				this.drop();
+			}
+		}
+
+		drop() {
+			if (this.target) {
+				this.target.image = SPRITE_DATA.box;
+				this.image = SPRITE_DATA.staff;
+				this.target = null;
+			}
+		}
+	}
+
 	/** Game data */
 
 	var SPRITE_DIR = "sprites/";
@@ -306,7 +468,25 @@ var G;
 			imageData: null,
 			frames: 4,
 			width: 12
-		}
+		},
+		staff: {
+			imageName: "staff.png",
+			imageData: null
+		},
+		staff_active: {
+			imageName: "staff.active.png",
+			imageData: null
+		},
+		box: {
+			imageName: "box.png",
+			imageData: null
+		},
+		box_active: {
+			imageName: "box.active.png",
+			imageData: null,
+			frames: 4,
+			width: 5
+		},
 	};
 	
 	var LEVEL_DIR = "levels/";
@@ -321,22 +501,22 @@ var G;
 				{
 					constructor: Merlin,
 					params: {
-						image: "merlin", 
-						x: 0,
-						y: 0,
-						width: 4
+						x: 6,
+						y: 10
 					}
 				},
 				{
 					constructor: Troll,
 					params: {
-						image: "troll", 
-						x: 0,
-						y: 24,
-						width: 9,
-						height: 12,
-						widthOffset: 0,
-						heightOffset: 0
+						x: 6,
+						y: 24
+					}
+				},
+				{
+					constructor: Box,
+					params: {
+						x: 20,
+						y: 24
 					}
 				}
 			]
@@ -425,11 +605,16 @@ var G;
 			while (j < j_range) {
 				var pixel_x = (invert ? (i_range + i_init - i - 1) : i) + screenX - imageX;
 				var pixel_y = j + screenY - imageY;
-				drawPixel(
-					image.data.slice(
-						(i + j * image.width) * image.pixelSize,
-						(i + j * image.width) * image.pixelSize + image.pixelSize),
+				if (pixel_x >= 0 &&
+					pixel_x < WIDTH &&
+					pixel_y >= 0 &&
+					pixel_y < HEIGHT) {
+					drawPixel(
+						image.data.slice(
+							(i + j * image.width) * image.pixelSize,
+							(i + j * image.width) * image.pixelSize + image.pixelSize),
 						pixel_x, pixel_y);
+				}
 				j++;
 			}
 			i++
@@ -525,15 +710,33 @@ var G;
 	/**
 	 * Checks a range in the collision map and returns a list of all object ids collided with
 	 * -1 refers to terrain
+	 * Uses world coordinates
 	 */
 	function checkCollision(x, y, width = 0, height = 0) {
 		var collidedWith = {};
 		for (var i = Math.max(x, 0); i < Math.min(x + width, levelImage.width); i++) {
 			for (var j = Math.max(y, 0); j < Math.min(y + height, levelImage.height); j++) {
 				for (var id of Object.keys(objectCollisionMap[i + j * levelImage.width])) {
-					collidedWith[id] = true;
+					collidedWith[id] = objects[id];
 				}
 			}
+		}
+		return collidedWith;
+	}
+
+	/** 
+	 * Retrieves collisions at a specific point.
+	 * Uses screen coordinates
+	 */
+	function getCollisionAtScreen(x, y) {
+		var xPos = x + player.x - WIDTH/2;
+		var yPos = y + player.y - HEIGHT/2;
+		if (xPos < 0 || yPos < 0 || xPos >= levelImage.width || yPos >= levelImage.height) {
+			return {};
+		}
+		var collidedWith = {};
+		for (var id of Object.keys(objectCollisionMap[xPos + yPos * levelImage.width])) {
+			collidedWith[id] = objects[id];
 		}
 		return collidedWith;
 	}
@@ -541,10 +744,7 @@ var G;
 	/** Rendering functions */
 
 	function drawLevel() {
-		imageBlit(
-			levelImage, 
-			WIDTH / 2 - player.x, 
-			HEIGHT / 2 - player.y);
+		imageBlit(levelImage, WIDTH / 2 - player.x, HEIGHT / 2 - player.y);
 	}
 
 	/** Controls and state updates */
@@ -552,7 +752,9 @@ var G;
 		left: false,
 		right: false,
 		up: false,
-		down: false
+		down: false,
+		mouseX: -1,
+		mouseY: -1,
 	}
 
 	function engineTick() {
@@ -566,6 +768,13 @@ var G;
 			for (var obj of Object.keys(objects)) {
 				objects[obj].computeCollision();
 			}
+
+			// Clear the deletion queue
+			for (var id of Object.keys(objectDeletionQueue)) {
+				objects[id].clearCollisionMap();
+				delete objects[id];
+			}
+			objectDeletionQueue = {};
 
 			// Render level and objects
 			drawLevel();
@@ -634,10 +843,15 @@ var G;
 			}
 		},
 		touch: function(x, y) {
+			if (levelImage && player) {
+				player.magic(getCollisionAtScreen(x, y));
+			}
 		},
 		release: function(x, y) {
 		},
 		enter: function(x, y) {
+			controls.mouseX = x;
+			controls.mouseY = y;
 		},
 		exit: function(x, y) {
 		},
