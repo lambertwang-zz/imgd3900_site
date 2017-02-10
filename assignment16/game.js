@@ -75,7 +75,7 @@ var G;
 			// Only if image data is available
 			if (this.image && this.image.imageData && levelImage) {
 				if (this.width == -1) {
-					this.width = this.image.imageData.width;
+					this.width = this.image.width;
 				}
 				if (this.height == -1) {
 					this.height = this.image.imageData.height;
@@ -229,10 +229,14 @@ var G;
 
 	/** Game scripting */
 	var player = null;
+	var playerData = {
+		tool: null,
+		alt_tool: null
+	}
 
 	class Merlin extends GameObject {
-		constructor(objectData) {
-			super(objectData);
+		constructor(params) {
+			super(params);
 			this.type = "merlin";
 			this.image = SPRITE_DATA.merlin;
 			this.frameSpeed = 15;
@@ -241,8 +245,15 @@ var G;
 			player = this;
 			this.stunned = 0;
 			this.health = 2;
-			this.tool = new Staff();
+			this.onGround = false;
+			this.tool = null;
 			this.alt_tool = null;
+			if (playerData.tool) {
+				this.tool = new playerData.tool();
+			}
+			if (playerData.alt_tool) {
+				this.alt_tool = new playerData.alt_tool();
+			}
 		}
 
 		tick() {
@@ -268,6 +279,7 @@ var G;
 
 				if (Object.keys(ground).length > 0) {
 					// On ground or standing on something
+					this.onGround = true;
 					this.yVel = 0;
 					if (controls.up) {
 						this.yVel = -1;
@@ -279,6 +291,7 @@ var G;
 
 			if (Object.keys(ground).length <= 0) {
 				// In air
+				this.onGround = false;
 				this.yVel += 0.07;
 				if (this.yVel > 1) {
 					this.yVel = 1;
@@ -298,13 +311,53 @@ var G;
 					this.move(1, -1);
 				}
 				this.stunned = 30;
+			} else if (other.type == "door") {
+				levelChangeReady = 1;
+			} else if (other.type == "door_prev") {
+				levelChangeReady = -1;
 			}
 		}
 
 		magic(targets) {
+			for (var obj of Object.keys(targets)) {
+				if (targets[obj] && targets[obj].type == "altar") {
+					var temp = this.tool;
+					if (targets[obj].tool) {
+						this.tool = new targets[obj].tool();
+						cycleTexts(this.tool.statusText);
+					} else {
+						this.tool = null;
+					}
+					if (temp) {
+						targets[obj].image = temp.altarImage;
+						targets[obj].tool = temp.constructor;
+						objectDeletionQueue[temp.id] = temp;
+					} else {
+						targets[obj].image = SPRITE_DATA.altar;
+						targets[obj].tool = null;
+					}
+					return;
+				}
+			}
 			if (this.tool) {
 				this.tool.cast(targets);
 			}
+		}
+	}
+
+	class Door extends GameObject {
+		constructor(params) {
+			super(params);
+			this.type = "door";
+			this.image = SPRITE_DATA.door;
+		}
+	}
+
+	class DoorPrev extends GameObject {
+		constructor(params) {
+			super(params);
+			this.type = "door_prev";
+			this.image = SPRITE_DATA.door_prev;
 		}
 	}
 
@@ -318,7 +371,7 @@ var G;
 			this.width = 9;
 			this.height = 11;
 			this.widthOffset = 0;
-			this.heightOffset = 0;
+			this.heightOffset = 1;
 		}
 
 		tick() {
@@ -358,7 +411,6 @@ var G;
 		}
 	}
 
-
 	class Box extends GameObject {
 		constructor(objectData) {
 			super(objectData);
@@ -391,14 +443,29 @@ var G;
 		}
 	}
 
+	class Altar extends GameObject {
+		constructor(params) {
+			super(params);
+			this.type = "altar";
+			this.frameSpeed = 35;
+
+			this.tool = params.tool;
+		}
+	}
+
 	class Staff extends GameObject {
 		constructor(params) {
 			super(params);
 			this.image = SPRITE_DATA.staff;
 			this.ephemeral = true;
 
+			this.altarImage = SPRITE_DATA.altar_staff
 			this.target = null;
 			this.holder = player;
+			this.statusText = [
+				"It's a powerful staff!",
+				"Click to move blocks!"
+			];
 		}
 
 		tick() {
@@ -445,6 +512,47 @@ var G;
 		}
 	}
 
+	class Balloon extends GameObject {
+		constructor(params) {
+			super(params);
+			this.image = SPRITE_DATA.balloon;
+			this.ephemeral = true;
+
+			this.altarImage = SPRITE_DATA.altar_balloon
+			this.holder = player;
+			this.ready = true;
+			this.statusText = [
+				"Wow, a magic balloon!",
+				"Click to fly!"
+			];
+		}
+
+		tick() {
+			if (this.holder.onGround && !this.ready) {
+				this.ready = true;
+				this.image = SPRITE_DATA.balloon;
+			}
+		}
+
+		draw() {
+			// Overloaded draw function
+			// Follows merlin
+			this.spriteInverted = this.holder.spriteInverted;
+			this.x = this.holder.x + (this.spriteInverted ? -4 : 5);
+			this.y = this.holder.y - 3;
+
+			super.draw();
+		}
+
+		cast (targets) {
+			if (this.ready) {
+				this.ready = false;
+				this.image = SPRITE_DATA.balloon_used;
+				this.holder.yVel = -1;
+			}
+		}
+	}
+
 	/** Game data */
 
 	var SPRITE_DIR = "sprites/";
@@ -487,36 +595,194 @@ var G;
 			frames: 4,
 			width: 5
 		},
+		door: {
+			imageName: "door.png",
+			imageData: null
+		},
+		door_prev: {
+			imageName: "door.prev.png",
+			imageData: null
+		},
+		altar: {
+			imageName: "altar.png",
+			imageData: null
+		},
+		altar_staff: {
+			imageName: "altar.staff.png",
+			imageData: null,
+			frames: 2,
+			width: 4
+		},
+		altar_balloon: {
+			imageName: "altar.balloon.png",
+			imageData: null,
+			frames: 2,
+			width: 4
+		},
+		balloon: {
+			imageName: "balloon.png",
+			imageData: null
+		},
+		balloon_used: {
+			imageName: "balloon.used.png",
+			imageData: null
+		},
 	};
 	
 	var LEVEL_DIR = "levels/";
 	var LEVEL_DATA = [
 		{
 			imageName: "level1.png",
-			startLocation: {
-				x: 10,
-				y: 10
-			},
+			statusText: [
+				"Aaaaaaaaaah!",
+				"Where am I?",
+				"I need find the exit!",
+				"Arrow Keys/WASD to move"
+			],
+			wallColor: [0, 0, 0],
 			objects: [
 				{
 					constructor: Merlin,
 					params: {
-						x: 6,
+						x: 12,
 						y: 10
 					}
 				},
 				{
-					constructor: Troll,
+					constructor: Door,
 					params: {
-						x: 6,
-						y: 24
+						x: 50,
+						y: 28
+					}
+				}
+			]
+		},
+		{
+			imageName: "level2.png",
+			statusText: [
+				"Debris blocks my way",
+				"Up/W to jump"
+			],
+			wallColor: [0, 0, 0],
+			objects: [
+				{
+					constructor: Merlin,
+					params: {
+						x: 7,
+						y: 29
+					}
+				},
+				{
+					constructor: Door,
+					params: {
+						x: 50,
+						y: 28
+					}
+				}
+			]
+		},
+		{
+			imageName: "level3.png",
+			statusText: [
+				"What's that? A magic staff?",
+				"Maybe I should click it..."
+			],
+			wallColor: [0, 0, 0],
+			objects: [
+				{
+					constructor: Merlin,
+					params: {
+						x: 12,
+						y: 29
 					}
 				},
 				{
 					constructor: Box,
 					params: {
-						x: 20,
+						x: 24,
 						y: 24
+					}
+				},
+				{
+					constructor: Altar,
+					params: {
+						image: "altar_staff",
+						x: 6,
+						y: 26,
+						tool: Staff
+					}
+				},
+				{
+					constructor: Door,
+					params: {
+						x: 70,
+						y: 18
+					}
+				}
+			]
+		},
+		{
+			imageName: "level4.png",
+			statusText: [
+				"Yet more rooms",
+				"My clairvoyance is blocked...",
+				"I must find out why..."
+			],
+			wallColor: [0, 0, 0],
+			objects: [
+				{
+					constructor: Merlin,
+					params: {
+						x: 5,
+						y: 22
+					}
+				},
+				{
+					constructor: Altar,
+					params: {
+						image: "altar_balloon",
+						x: 110,
+						y: 29,
+						tool: Balloon
+					}
+				},
+				{
+					constructor: Door,
+					params: {
+						x: 90,
+						y: 10
+					}
+				}
+			]
+		},
+		{
+			imageName: "level5.png",
+			statusText: [
+				"TBD..."
+			],
+			wallColor: [0, 0, 0],
+			objects: [
+				{
+					constructor: Merlin,
+					params: {
+						x: 20,
+						y: 22
+					}
+				},
+				{
+					constructor: Altar,
+					params: {
+						image: "altar_balloon",
+						x: 110,
+						y: 29,
+						tool: Balloon
+					}
+				},
+				{
+					constructor: DoorPrev,
+					params: {
+						x: 5,
+						y: 10
 					}
 				}
 			]
@@ -632,10 +898,10 @@ var G;
 			}
 		}
 		// Clear the pixel buffer
-		for (var i = 0; i < WIDTH * HEIGHT; i++) {
-			pixels[i * 3] = 0;
-			pixels[i * 3 + 1] = 0;
-			pixels[i * 3 + 2] = 0;
+		for (var i = 0; i < WIDTH; i++) {
+			for (var j = 0; j < HEIGHT; j++) {
+				setPixel(LEVEL_DATA[levelIndex].wallColor, i, j);
+			}
 		}
 	}
 
@@ -686,7 +952,19 @@ var G;
 		PS.imageLoad(
 			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName, 
 			onLevelImageLoaded, 4);
+		cycleTexts(LEVEL_DATA[levelIndex].statusText);
 
+		// Preserve merlin's weapons (if possible)
+		if (player) {
+			if (player.tool) {
+				playerData.tool = player.tool.constructor;
+			}
+
+			if (player.alt_tool) {
+				playerData.alt_tool = player.alt_tool.constructor;
+			}
+		}
+		
 		// Add all objects to level
 		objects = {};
 		objectIdIterator = 0;
@@ -704,6 +982,13 @@ var G;
 			if (levelImage.data[i * 4 + 3] > 128) {
 				objectCollisionMap[i][-1] = true;
 			}
+		}
+	}
+
+	function cycleTexts(textList, index = 0) {
+		PS.statusText(textList[index++]);
+		if (index < textList.length) {
+			setTimeout(cycleTexts.bind(null, textList, index), 2000);
 		}
 	}
 
@@ -756,6 +1041,7 @@ var G;
 		mouseX: -1,
 		mouseY: -1,
 	}
+	var levelChangeReady = 0;
 
 	function engineTick() {
 		if (levelImage) {
@@ -777,15 +1063,22 @@ var G;
 			objectDeletionQueue = {};
 
 			// Render level and objects
+			// keys.reverse() is a hacky way of giving merlin rendering priority
 			drawLevel();
-			for (var obj of Object.keys(objects)) {
+			for (var obj of Object.keys(objects).reverse()) {
 				objects[obj].draw();
+			}
+
+			if (levelChangeReady != 0) {
+				levelIndex += levelChangeReady;
+				levelChangeReady = 0;
+				loadLevel();
 			}
 		}
 
 		flushPixels();
 
-		if (levelImage && DEBUG_DRAW) {
+		if (DEBUG_DRAW && levelImage) {
 			// showCollisionMap();
 			for (var i = 0; i < WIDTH; i++) {
 				for (var j = 0; j < HEIGHT; j++) {
@@ -801,8 +1094,10 @@ var G;
 					}
 				}
 			}
-		} 
-			// HEIGHT / 2 - player.y)
+		}  else {
+			PS.border(PS.ALL, PS.ALL, 0);
+			PS.glyph(PS.ALL, PS.ALL, "");
+		}
 	};
 
 	// Public functions are exposed in the global G object, which is initialized here.
@@ -813,31 +1108,45 @@ var G;
 		keyDown: function(key) {
 			switch (key) {
 				case PS.KEY_ARROW_LEFT:
+				case 97:
 					controls.left = true;
 					break;
 				case PS.KEY_ARROW_RIGHT:
+				case 100:
 					controls.right = true;
 					break;
 				case PS.KEY_ARROW_UP:
+				case 119:
 					controls.up = true;
 					break;
 				case PS.KEY_ARROW_DOWN:
+				case 115:
 					controls.down = true;
+					break;
+				case PS.KEY_F1:
+					DEBUG_DRAW = !DEBUG_DRAW;
+					break;
+				case PS.KEY_F2:
+					levelChangeReady = 1;
 					break;
 			}
 		},
 		keyUp: function(key) {
 			switch (key) {
 				case PS.KEY_ARROW_LEFT:
+				case 97:
 					controls.left = false;
 					break;
 				case PS.KEY_ARROW_RIGHT:
+				case 100:
 					controls.right = false;
 					break;
 				case PS.KEY_ARROW_UP:
+				case 119:
 					controls.up = false;
 					break;
 				case PS.KEY_ARROW_DOWN:
+				case 115:
 					controls.down = false;
 					break;
 			}
