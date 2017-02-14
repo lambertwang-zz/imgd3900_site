@@ -440,36 +440,70 @@ var G;
 			this.height = 11;
 			this.widthOffset = 0;
 			this.heightOffset = 1;
+
+			this.homeX = this.x;
+			this.homeY = this.y;
 		}
 
 		tick() {
-			return;
-			// Check for ground
 			if (!this.boundingBox) {
 				return;
 			}
+
+			// Check distance to merlin
+			// Range = 16?
+			var selfLoc = this.x + (this.width / 2);
+			var merlinLoc = player.x + (player.width / 2);
+
+			var distance = Math.abs(selfLoc - merlinLoc);
+			this.image = SPRITE_DATA.troll;
+
+			// Check if troll is on ground
 			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
 
-			if (controls.left) {
+			if (distance <= 16) {
+				
+				var edge = null;
 				this.image = SPRITE_DATA.troll_walk;
-				this.spriteInverted = true;
-				this.xVel = -.3;
-			} else if (controls.right) {
+				if (selfLoc > merlinLoc) {
+					edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
+					this.xVel = -0.2;
+					this.spriteInverted = true;
+				} else {
+					edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
+					this.xVel = 0.2;
+					this.spriteInverted = false;
+				}
+				if (Object.keys(ground).length > 0 && edge && Object.keys(edge).length > 0) {
+					// On ground or standing on something
+					this.yVel = -.5;
+				}
+			} else if (Math.abs(this.x - this.homeX) >= 4) {
+				
+				var edge = null;
 				this.image = SPRITE_DATA.troll_walk;
-				this.spriteInverted = false;
-				this.xVel = .3;
-			} else {
-				this.image = SPRITE_DATA.troll;
-				this.xVel = 0;
-			}
-
-			if (Object.keys(ground).length > 0) {
-				// On ground or standing on something
-				this.yVel = 0;
-				if (controls.up) {
-					this.yVel = -1;
+				if (this.x > this.homeX) {
+					edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
+					this.xVel = -0.1;
+					this.spriteInverted = true;
+				} else {
+					edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
+					this.xVel = 0.1;
+					this.spriteInverted = false;
+				}
+				if (Object.keys(ground).length > 0 && edge && Object.keys(edge).length > 0) {
+					// On ground or standing on something
+					this.yVel = -.5;
 				}
 			} else {
+				this.xVel = 0.0;
+				if (Object.keys(ground).length > 0) {
+					// On ground or standing on something
+					this.yVel = 0;
+				}
+			}
+
+			if (Object.keys(ground).length <= 0) {
 				// In air
 				this.yVel += 0.07;
 				if (this.yVel > 1) {
@@ -991,57 +1025,58 @@ var G;
 		for (var i = 0; i < levelImage.width * levelImage.height; i++) {
 			objectCollisionMap[i] = {};
 			if (!levelObjects[levelIndex]) {
+				var newObj = null;
+				var newObjParams = {
+					x: i % image.width, 
+					y: Math.floor(i / image.width)
+				};
 				// #00FF00 pixel represents merlin
 				if (levelImage.data[i * 4 + 1] == 255) {
-					console.log("LevelLoad: Placing Merlin at", i % image.width, Math.floor(i / image.width));
-					new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
-
+					newObj = new Merlin(newObjParams);
 				} else if (levelImage.data[i * 4 + 1] == 192) {
 					// #00A000 pixel represents exit door
 					if (levelImage.data[i * 4 + 2] == 0) {
-						console.log("LevelLoad: Placing Door at", i % image.width, Math.floor(i / image.width));
-						new Door({ x: i % image.width, y: Math.floor(i / image.width) });
+						newObj = new Door(newObjParams);
 					// #00A080 pixel represents entry door
 					} else if (levelImage.data[i * 4 + 2] == 128) {
-						console.log("LevelLoad: Placing Back Door at", i % image.width, Math.floor(i / image.width));
-						new DoorPrev({ x: i % image.width, y: Math.floor(i / image.width) });
+						newObj = new DoorPrev(newObjParams);
 					}
 
 				// #008000 pixel represents boxes
 				} else if (levelImage.data[i * 4 + 1] == 128) {
-					console.log("LevelLoad: Placing Box at", i % image.width, Math.floor(i / image.width));
-					new Box({ x: i % image.width, y: Math.floor(i / image.width) });
-
+					new Box(newObjParams);
 				// #0040XX pixel represents altars
 				} else if (levelImage.data[i * 4 + 1] == 64) {
-					console.log("LevelLoad: Placing Altar at", i % image.width, Math.floor(i / image.width));
-					var params = {
-						x: i % image.width,
-						y: Math.floor(i / image.width),
-						tool: undefined,
-						image: ""
-					}
+					newObjParams.tool = undefined;
+					newObjParams.image = "";
+					
 					// Green value represents the altar's item;
 					switch (levelImage.data[i*4 + 2]) {
 						case 0: // #000040 -> Empty
 							break;
 						case 64: // #004040 -> Staff
-							params.image = "altar_staff";
-							params.tool = Staff;
+							newObjParams.image = "altar_staff";
+							newObjParams.tool = Staff;
 							break;
 						case 128: // #008040 -> Balloon
-							params.image = "altar_balloon";
-							params.tool = Balloon;
+							newObjParams.image = "altar_balloon";
+							newObjParams.tool = Balloon;
 							break;
 						case 192: // #00A040 -> Bow
-							params.image = "altar_bow";
-							params.tool = Bow;
+							newObjParams.image = "altar_bow";
+							newObjParams.tool = Bow;
 							break;
 						case 255: // #00FF40 -> ???
 							break;
 					}
-					console.log("LevelLoad: Altar item is " + params.image);
-					new Altar(params);
+					console.log("LevelLoad: Altar item is " + newObjParams.image);
+					newObj = new Altar(newObjParams);
+				// #002000 pixel represents the troll
+				} else if (levelImage.data[i * 4 + 1] == 0x20) {
+					newObj = new Troll(newObjParams);
+				}
+				if (newObj) {
+					console.log("LevelLoad: Placing " + newObj.type + " at", newObjParams.x, newObjParams.y);
 				}
 			}
 
