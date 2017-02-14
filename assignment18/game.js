@@ -537,7 +537,7 @@ var G;
 			this.holder = player;
 			this.statusText = [
 				"It's a powerful staff!",
-				"Click to move blocks!"
+				"Click and drag to move blocks!"
 			];
 		}
 
@@ -598,7 +598,8 @@ var G;
 			this.holder = player;
 			this.isDownPressed = false;
 			this.statusText = [
-				"Wow, a magic balloon!"
+				"Wow, a magic balloon!",
+				"Press Down/S to descend faster"
 			];
 
 		}
@@ -1002,6 +1003,7 @@ var G;
 			}
 		}
 
+		console.log("Generating level " + (levelIndex+1));
 		// Reads pixels and constructs collision map
 		objectCollisionMap = [];
 		for (var i = 0; i < levelImage.width * levelImage.height; i++) {
