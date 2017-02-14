@@ -1242,6 +1242,12 @@ var G;
 					STYLE.OVERLAY_FADE = 0;
 					STYLE.LOAD_FADE_DURATION = 0;
 					break;
+				case PS.KEY_F3:
+					console.log("DEBUG: Back a level");
+					levelChangeReady = -1;
+					STYLE.OVERLAY_FADE = 0;
+					STYLE.LOAD_FADE_DURATION = 0;
+					break;
 			}
 		},
 		keyUp: function(key) {
