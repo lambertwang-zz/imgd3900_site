@@ -36,6 +36,12 @@ var G;
 			this.ephemeral = false;
 			// If true cannot move through other objects
 			this.solid = false;
+			// If true, does not carry over between levels
+			/**
+			 * This is mostly used for tools.
+			 * Because merlin constructs new tools each time he is constructed
+			 */
+			this.dontRegenerate = false;
 			this.type = null;
 			/** End of user settable parameters */
 			if (objectData) {
@@ -71,7 +77,9 @@ var G;
 			return {
 				x: this.x,
 				y: this.y,
-				image: this.image
+				image: this.image,
+				tool: this.tool,
+				alt_tool: this.alt_tool,
 			}
 		}
 
@@ -257,15 +265,19 @@ var G;
 			this.stunned = 0;
 			this.health = 2;
 			this.onGround = false;
-			this.tool = null;
-			this.alt_tool = null;
+
 			this.touchingAltar = false; // Currently touching altar
 			this.touchedAltar = false; // Touched altar last frame
 
 			this.touchingDoor = true; // Currently touching altar
 			this.touchedDoor = false; // Touched altar last frame
 
+
+			this.tool = null;
+			this.alt_tool = null;
+
 			if (playerData.tool) {
+				console.log("Saving tool from last level");
 				this.tool = new playerData.tool();
 			}
 			if (playerData.alt_tool) {
@@ -365,12 +377,6 @@ var G;
 		}
 
 		magic(targets) {
-			for (var obj of Object.keys(targets)) {
-				if (targets[obj] && targets[obj].type == "altar") {
-					this.pickup(targets[obj]);
-					return;
-				}
-			}
 			if (this.tool) {
 				this.tool.cast(targets);
 			}
@@ -403,7 +409,7 @@ var G;
 			this.image = SPRITE_DATA.door;
 
 			this.height = 1;
-			this.heightOffset = 7;
+			this.heightOffset = 8;
 			this.width = 2;
 			this.widthOffset = 2;
 		}
@@ -416,7 +422,7 @@ var G;
 			this.image = SPRITE_DATA.door_prev;
 
 			this.height = 1;
-			this.heightOffset = 7;
+			this.heightOffset = 8;
 			this.width = 2;
 			this.widthOffset = 2;
 		
@@ -510,6 +516,8 @@ var G;
 			super(params);
 			this.type = "altar";
 			this.frameSpeed = 35;
+			this.heightOffset = 10;
+			this.height = 1;
 
 			this.tool = params.tool;
 		}
@@ -521,6 +529,8 @@ var G;
 			this.type = "staff";
 			this.image = SPRITE_DATA.staff;
 			this.ephemeral = true;
+
+			this.dontRegenerate = true;
 
 			this.altarImage = SPRITE_DATA.altar_staff
 			this.target = null;
@@ -582,12 +592,15 @@ var G;
 			this.image = SPRITE_DATA.balloon;
 			this.ephemeral = true;
 
+			this.dontRegenerate = true;
+
 			this.altarImage = SPRITE_DATA.altar_balloon
 			this.holder = player;
 			this.isDownPressed = false;
 			this.statusText = [
 				"Wow, a magic balloon!"
 			];
+			
 		}
 
 		draw() {
@@ -727,31 +740,21 @@ var G;
 			imageName: "level3.png",
 			statusText: [
 				"What's that? A magic staff?",
-				"Maybe I should click it..."
+				"Maybe I should grab it..."
 			],
 			objects: [
 				{
 					constructor: Box,
-					params: {
-						x: 24,
-						y: 24
-					}
+					params: { x: 70, y: 66 }
 				},
+				{
+					constructor: Box,
+					params: { x: 72, y: 61 }
+				},
+
 				{
 					constructor: Altar,
-					params: {
-						image: "altar_staff",
-						x: 6,
-						y: 26,
-						tool: Staff
-					}
-				},
-				{
-					constructor: Door,
-					params: {
-						x: 70,
-						y: 18
-					}
+					params: { image: "altar_staff", x: 54, y: 66, tool: Staff }
 				}
 			]
 		},
@@ -767,16 +770,9 @@ var G;
 					constructor: Altar,
 					params: {
 						image: "altar_balloon",
-						x: 110,
-						y: 29,
+						x: 140,
+						y: 69,
 						tool: Balloon
-					}
-				},
-				{
-					constructor: Door,
-					params: {
-						x: 90,
-						y: 10
 					}
 				}
 			]
@@ -787,22 +783,6 @@ var G;
 				"TBD..."
 			],
 			objects: [
-				{
-					constructor: Altar,
-					params: {
-						image: "altar_balloon",
-						x: 110,
-						y: 29,
-						tool: Balloon
-					}
-				},
-				{
-					constructor: DoorPrev,
-					params: {
-						x: 5,
-						y: 10
-					}
-				}
 			]
 		}
 	];
@@ -984,10 +964,14 @@ var G;
 		if (player) {
 			if (player.tool) {
 				playerData.tool = player.tool.constructor;
+			} else {
+				playerData.tool = null;
 			}
 
 			if (player.alt_tool) {
 				playerData.alt_tool = player.alt_tool.constructor;
+			} else {
+				playerData.alt_tool = null;
 			}
 		}
 
@@ -1008,7 +992,9 @@ var G;
 		objectIdIterator = 0;
 		if (levelObjects[levelIndex]) {
 			for (var obj of Object.keys(levelObjects[levelIndex])) {
-				new levelObjects[levelIndex][obj].constructor(levelObjects[levelIndex][obj].spawnParams());
+				if (!levelObjects[levelIndex][obj].dontRegenerate) {
+					new levelObjects[levelIndex][obj].constructor(levelObjects[levelIndex][obj].spawnParams());
+				}
 			}
 		} else {
 			for (var obj of LEVEL_DATA[levelIndex].objects) {
