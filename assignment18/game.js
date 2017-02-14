@@ -180,6 +180,7 @@ var G;
 				var edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
 				if (Object.keys(edge).length > 0 || this.x + this.width >= levelImage.width) {
 					this.xStep = 0;
+					this.xVel = 0;
 					stopped = true;
 				} else {
 					this.x++;
@@ -190,6 +191,7 @@ var G;
 				var edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
 				if (Object.keys(edge).length > 0 || this.x <= 0) {
 					this.xStep = 0;
+					this.xVel = 0;
 					stopped = true;
 				} else {
 					this.x--;
@@ -200,6 +202,7 @@ var G;
 				var edge = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
 				if (Object.keys(edge).length > 0 || this.y + this.heighy >= levelImage.height) {
 					this.yStep = 0;
+					this.yVel = 0;
 					stopped = true;
 				} else {
 					this.y++;
@@ -210,6 +213,7 @@ var G;
 				var edge = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
 				if (Object.keys(edge).length > 0 || this.y <= 0) {
 					this.yStep = 0;
+					this.yVel = 0;
 					stopped = true;
 				} else {
 					this.y--;
@@ -240,7 +244,6 @@ var G;
 			this.type = "merlin";
 			this.image = SPRITE_DATA.merlin;
 			this.frameSpeed = 15;
-			this.width = 4;
 
 			player = this;
 			this.stunned = 0;
@@ -248,6 +251,9 @@ var G;
 			this.onGround = false;
 			this.tool = null;
 			this.alt_tool = null;
+			this.touchingAltar = false; // Currently touching altar
+			this.touchedAltar = false; // Touched altar last frame
+
 			if (playerData.tool) {
 				this.tool = new playerData.tool();
 			}
@@ -262,6 +268,9 @@ var G;
 				return;
 			}
 			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
+
+			this.touchingAltar = this.touchedAltar;
+			this.touchedAltar = false;
 			
 			if (this.stunned <= 0) {
 				if (controls.left) {
@@ -283,6 +292,15 @@ var G;
 					this.yVel = 0;
 					if (controls.up) {
 						this.yVel = -1;
+						if (this.tool && this.tool.jump) {
+							this.tool.jump();
+						}
+					}
+				}
+
+				if (controls.down) {
+					if (this.tool && this.tool.down) {
+						this.tool.down();
 					}
 				}
 			} else {
@@ -295,6 +313,9 @@ var G;
 				this.yVel += 0.07;
 				if (this.yVel > 1) {
 					this.yVel = 1;
+				}
+				if (this.tool && this.tool.gravity) {
+					this.tool.gravity();
 				}
 			}
 		}
@@ -315,33 +336,42 @@ var G;
 				levelChangeReady = 1;
 			} else if (other.type == "door_prev") {
 				levelChangeReady = -1;
+			} else if (other.type == "altar") {
+				this.touchedAltar = true;
+				if (!this.touchingAltar) {
+					this.pickup(other);
+				}
 			}
 		}
 
 		magic(targets) {
 			for (var obj of Object.keys(targets)) {
 				if (targets[obj] && targets[obj].type == "altar") {
-					var temp = this.tool;
-					if (targets[obj].tool) {
-						this.tool = new targets[obj].tool();
- 						PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
-						cycleTexts(this.tool.statusText);
-					} else {
-						this.tool = null;
-					}
-					if (temp) {
-						targets[obj].image = temp.altarImage;
-						targets[obj].tool = temp.constructor;
-						objectDeletionQueue[temp.id] = temp;
-					} else {
-						targets[obj].image = SPRITE_DATA.altar;
-						targets[obj].tool = null;
-					}
+					this.pickup(targets[obj]);
 					return;
 				}
 			}
 			if (this.tool) {
 				this.tool.cast(targets);
+			}
+		}
+
+		pickup(altar) {
+			var temp = this.tool;
+			if (altar.tool) {
+				this.tool = new altar.tool();
+				PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
+				cycleTexts(this.tool.statusText);
+			} else {
+				this.tool = null;
+			}
+			if (temp) {
+				altar.image = temp.altarImage;
+				altar.tool = temp.constructor;
+				objectDeletionQueue[temp.id] = temp;
+			} else {
+				altar.image = SPRITE_DATA.altar;
+				altar.tool = null;
 			}
 		}
 	}
@@ -351,6 +381,11 @@ var G;
 			super(params);
 			this.type = "door";
 			this.image = SPRITE_DATA.door;
+
+			this.height = 1;
+			this.heightOffset = 7;
+			this.width = 2;
+			this.widthOffset = 2;
 		}
 	}
 
@@ -359,6 +394,12 @@ var G;
 			super(params);
 			this.type = "door_prev";
 			this.image = SPRITE_DATA.door_prev;
+
+			this.height = 1;
+			this.heightOffset = 7;
+			this.width = 2;
+			this.widthOffset = 2;
+		
 		}
 	}
 
@@ -484,7 +525,7 @@ var G;
 			// Overloaded draw function
 			// Follows merlin
 			this.spriteInverted = this.holder.spriteInverted;
-			this.x = this.holder.x + (this.spriteInverted ? -2 : 5);
+			this.x = this.holder.x + (this.spriteInverted ? -1 : 4);
 			this.y = this.holder.y;
 
 			super.draw();
@@ -523,36 +564,44 @@ var G;
 
 			this.altarImage = SPRITE_DATA.altar_balloon
 			this.holder = player;
-			this.ready = true;
+			this.isDownPressed = false;
 			this.statusText = [
-				"Wow, a magic balloon!",
-				"Click to fly!"
+				"Wow, a magic balloon!"
 			];
 		}
 
-		tick() {
-			if (this.holder.onGround && !this.ready) {
-				this.ready = true;
+		draw() {
+			if (this.isDownPressed) {
+				this.image = SPRITE_DATA.balloon_used;
+				this.isDownPressed = false;
+			} else {
 				this.image = SPRITE_DATA.balloon;
 			}
-		}
-
-		draw() {
 			// Overloaded draw function
 			// Follows merlin
 			this.spriteInverted = this.holder.spriteInverted;
-			this.x = this.holder.x + (this.spriteInverted ? -4 : 5);
-			this.y = this.holder.y - 3;
+			this.x = this.holder.x + (this.spriteInverted ? -3 : 4);
+			this.y = this.holder.y - 4;
 
 			super.draw();
 		}
 
-		cast (targets) {
-			if (this.ready) {
-				this.ready = false;
-				this.image = SPRITE_DATA.balloon_used;
-				this.holder.yVel = -1;
+		jump() {
+			this.holder.yVel = -1.4;
+		}
+
+		gravity() {
+			if (!this.isDownPressed && this.holder.yVel > 0.1) {
+				this.holder.yVel = 0.1;
 			}
+		}
+
+		down() {
+			this.holder.yVel = 1;
+			this.isDownPressed = true;
+		}
+
+		cast (targets) {
 		}
 	}
 
@@ -568,7 +617,7 @@ var G;
 			imageName: "merlin.walk.png",
 			imageData: null,
 			frames: 3,
-			width: 5
+			width: 4
 		},
 		troll: {
 			imageName: "troll.png",
@@ -642,15 +691,7 @@ var G;
 				"I need find the exit!",
 				"Arrow Keys/WASD to move"
 			],
-			wallColor: [0, 0, 0],
 			objects: [
-				{
-					constructor: Merlin,
-					params: {
-						x: 12,
-						y: 10
-					}
-				},
 				{
 					constructor: Door,
 					params: {
@@ -666,7 +707,6 @@ var G;
 				"Debris blocks my way",
 				"Up/W to jump"
 			],
-			wallColor: [0, 0, 0],
 			objects: [
 				{
 					constructor: Merlin,
@@ -690,7 +730,6 @@ var G;
 				"What's that? A magic staff?",
 				"Maybe I should click it..."
 			],
-			wallColor: [0, 0, 0],
 			objects: [
 				{
 					constructor: Merlin,
@@ -731,7 +770,6 @@ var G;
 				"My clairvoyance is blocked...",
 				"I must find out why..."
 			],
-			wallColor: [0, 0, 0],
 			objects: [
 				{
 					constructor: Merlin,
@@ -763,7 +801,6 @@ var G;
 			statusText: [
 				"TBD..."
 			],
-			wallColor: [0, 0, 0],
 			objects: [
 				{
 					constructor: Merlin,
@@ -799,11 +836,12 @@ var G;
 
 	var STYLE = {
 		DEBUG: PS.COLOR_GREEN,
-		BACKGROUND_COLOR: PS.COLOR_BLACK,
+		BACKGROUND_COLOR: [0, 0, 0],
+		WALL_COLOR: [255, 255, 255],
 		LOAD_FADE_DURATION: 30,
 		STATUS_COLOR: PS.COLOR_WHITE,
 		OVERLAY_FADE_RATE: 4,
-		OVERLAY_FADE: 480
+		OVERLAY_FADE: 480,
 	}
 
 	var SOUND_OPTIONS = {
@@ -895,7 +933,7 @@ var G;
 		// Clear the pixel buffer
 		for (var i = 0; i < WIDTH; i++) {
 			for (var j = 0; j < HEIGHT; j++) {
-				setPixel(LEVEL_DATA[levelIndex].wallColor, i, j);
+				setPixel(STYLE.BACKGROUND_COLOR, i, j);
 			}
 		}
 	}
@@ -958,7 +996,7 @@ var G;
 		controls.paused = true;
 		levelFade = STYLE.OVERLAY_FADE;
 		PS.fade(PS.ALL, PS.ALL, STYLE.LOAD_FADE_DURATION);
-		PS.gridColor(LEVEL_DATA[levelIndex].wallColor);
+		PS.gridColor(STYLE.BACKGROUND_COLOR);
 
 
 		// Load level terrain
@@ -990,11 +1028,25 @@ var G;
 	function onLevelImageLoaded(image) {
 		levelImage = image;
 
+		// Reads pixels and constructs collision map
 		objectCollisionMap = [];
 		for (var i = 0; i < levelImage.width * levelImage.height; i++) {
 			objectCollisionMap[i] = {};
-			if (levelImage.data[i * 4 + 3] > 128) {
+			// Blue pixel represents merlin
+			if (levelImage.data[i * 4 + 2] == 255) {
+				console.log("LevelLoad: Placing Merlin");
+				new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
+			}
+			// If the red channel of the level image is > 128, then that is a wall section
+			if (levelImage.data[i * 4] > 128) {
 				objectCollisionMap[i][-1] = true;
+				// Set the image data to the wall color
+				levelImage.data[i * 4] = STYLE.WALL_COLOR[0];
+				levelImage.data[i * 4 + 1] = STYLE.WALL_COLOR[1];
+				levelImage.data[i * 4 + 2] = STYLE.WALL_COLOR[2];
+			} else {
+				// Set the image data to be transparent
+				levelImage.data[i * 4 + 3] = 0;
 			}
 		}
 		
@@ -1171,7 +1223,10 @@ var G;
 					DEBUG_DRAW = !DEBUG_DRAW;
 					break;
 				case PS.KEY_F2:
+					console.log("DEBUG: Skipped level");
 					levelChangeReady = 1;
+					STYLE.OVERLAY_FADE = 0;
+					STYLE.LOAD_FADE_DURATION = 0;
 					break;
 			}
 		},
