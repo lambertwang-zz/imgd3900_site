@@ -262,6 +262,9 @@ var G;
 			this.touchingAltar = false; // Currently touching altar
 			this.touchedAltar = false; // Touched altar last frame
 
+			this.touchingDoor = true; // Currently touching altar
+			this.touchedDoor = false; // Touched altar last frame
+
 			if (playerData.tool) {
 				this.tool = new playerData.tool();
 			}
@@ -279,7 +282,10 @@ var G;
 
 			this.touchingAltar = this.touchedAltar;
 			this.touchedAltar = false;
-			
+
+			this.touchingDoor = this.touchedDoor;
+			this.touchedDoor = false;
+
 			if (this.stunned <= 0) {
 				if (controls.left) {
 					this.image = SPRITE_DATA.merlin_walk;
@@ -341,9 +347,15 @@ var G;
 				}
 				this.stunned = 30;
 			} else if (other.type == "door") {
-				levelChangeReady = 1;
+				this.touchedDoor = true;
+				if (!this.touchingDoor) {
+					levelChangeReady = 1;
+				}
 			} else if (other.type == "door_prev") {
-				levelChangeReady = -1;
+				this.touchedDoor = true;
+				if (!this.touchingDoor) {
+					levelChangeReady = -1;
+				}
 			} else if (other.type == "altar") {
 				this.touchedAltar = true;
 				if (!this.touchingAltar) {
@@ -700,13 +712,6 @@ var G;
 				"Arrow Keys/WASD to move"
 			],
 			objects: [
-				{
-					constructor: Door,
-					params: {
-						x: 50,
-						y: 28
-					}
-				}
 			]
 		},
 		{
@@ -716,20 +721,6 @@ var G;
 				"Up/W to jump"
 			],
 			objects: [
-				{
-					constructor: Door,
-					params: {
-						x: 50,
-						y: 28
-					}
-				},
-				{
-					constructor: DoorPrev,
-					params: {
-						x: 10,
-						y: 28
-					}
-				}
 			]
 		},
 		{
@@ -978,7 +969,7 @@ var G;
 
 	// Stores objects of previous levels
 	var levelObjects = {};
-	var prevLevel = 0;
+	var prevLevel = -1;
 
 	function loadLevel() {
 		PS.dbEvent(DB_NAME, "level_loaded", levelIndex);
@@ -988,14 +979,6 @@ var G;
 		levelFade = STYLE.OVERLAY_FADE;
 		PS.fade(PS.ALL, PS.ALL, STYLE.LOAD_FADE_DURATION);
 		PS.gridColor(STYLE.BACKGROUND_COLOR);
-
-
-		// Load level terrain
- 		levelImage = null;
-		PS.imageLoad(
-			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName, 
-			onLevelImageLoaded, 4);
-		cycleTexts(LEVEL_DATA[levelIndex].statusText);
 
 		// Preserve merlin's weapons (if possible)
 		if (player) {
@@ -1007,14 +990,25 @@ var G;
 				playerData.alt_tool = player.alt_tool.constructor;
 			}
 		}
-		
-		// Add all objects to level
+
+		// Load level terrain
+ 		levelImage = null;
+		PS.imageLoad(
+			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName, 
+			onLevelImageLoaded, 4);
+	};
+
+	function onLevelImageLoaded(image) {
+		levelImage = image;
+
+		// Set previous level objects
 		levelObjects[prevLevel] = objects;
 		objects = {};
+		// Add new objects to level
 		objectIdIterator = 0;
 		if (levelObjects[levelIndex]) {
 			for (var obj of Object.keys(levelObjects[levelIndex])) {
-				new levelObjects[obj].constructor(levelObjects[obj].spawnParams());
+				new levelObjects[levelIndex][obj].constructor(levelObjects[levelIndex][obj].spawnParams());
 			}
 		} else {
 			for (var obj of LEVEL_DATA[levelIndex].objects) {
@@ -1022,30 +1016,26 @@ var G;
 			}
 		}
 
-		prevLevel = levelIndex;
-	};
-
-	function onLevelImageLoaded(image) {
-		levelImage = image;
-
 		// Reads pixels and constructs collision map
 		objectCollisionMap = [];
 		for (var i = 0; i < levelImage.width * levelImage.height; i++) {
 			objectCollisionMap[i] = {};
-			// Blue pixel represents merlin
-			if (levelImage.data[i * 4 + 2] == 255) {
-				console.log("LevelLoad: Placing Merlin");
-				new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
+			if (!levelObjects[levelIndex]) {
+				// Blue pixel represents merlin
+				if (levelImage.data[i * 4 + 2] == 255) {
+					console.log("LevelLoad: Placing Merlin");
+					new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
+				}
+				if (levelImage.data[i * 4 + 1] == 255) {
+					console.log("LevelLoad: Placing Door");
+					new Door({ x: i % image.width, y: Math.floor(i / image.width) });
+				}
+				if (levelImage.data[i * 4 + 1] == 128) {
+					console.log("LevelLoad: Placing Back Door");
+					new DoorPrev({ x: i % image.width, y: Math.floor(i / image.width) });
+				}
 			}
-			if (levelImage.data[i * 4 + 1] == 255) {
-				console.log("LevelLoad: Placing Door");
-				new Door({ x: i % image.width, y: Math.floor(i / image.width) });
-			}
-			
-			if (levelImage.data[i * 4 + 1] == 128) {
-				console.log("LevelLoad: Placing Back Door");
-				new DoorPrev({ x: i % image.width, y: Math.floor(i / image.width) });
-			}
+
 			// If the red channel of the level image is > 128, then that is a wall section
 			if (levelImage.data[i * 4] > 128) {
 				objectCollisionMap[i][-1] = true;
@@ -1058,7 +1048,14 @@ var G;
 				levelImage.data[i * 4 + 3] = 0;
 			}
 		}
-		
+
+		// Set level status text
+		if (levelObjects[levelIndex]) {
+			cycleTexts(LEVEL_DATA[levelIndex].statusText);
+		}
+
+		prevLevel = levelIndex;
+
 		// Level should be done fading in
 		setTimeout(function() {
 			PS.fade(PS.ALL, PS.ALL, 0);
