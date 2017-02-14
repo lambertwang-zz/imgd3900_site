@@ -44,7 +44,7 @@ var G;
 				}
 			}
 
-			if (this.image) {
+			if (typeof this.image === 'string') {
 				this.image = SPRITE_DATA[this.image];
 			}
 			this.xPrev = this.x;
@@ -65,6 +65,14 @@ var G;
 			objectIdIterator++;
 	
 			return this;
+		}
+
+		spawnParams() {
+			return {
+				x: this.x,
+				y: this.y,
+				image: this.image
+			}
 		}
 
 		update() {
@@ -709,16 +717,16 @@ var G;
 			],
 			objects: [
 				{
-					constructor: Merlin,
-					params: {
-						x: 7,
-						y: 29
-					}
-				},
-				{
 					constructor: Door,
 					params: {
 						x: 50,
+						y: 28
+					}
+				},
+				{
+					constructor: DoorPrev,
+					params: {
+						x: 10,
 						y: 28
 					}
 				}
@@ -731,13 +739,6 @@ var G;
 				"Maybe I should click it..."
 			],
 			objects: [
-				{
-					constructor: Merlin,
-					params: {
-						x: 12,
-						y: 29
-					}
-				},
 				{
 					constructor: Box,
 					params: {
@@ -772,13 +773,6 @@ var G;
 			],
 			objects: [
 				{
-					constructor: Merlin,
-					params: {
-						x: 5,
-						y: 22
-					}
-				},
-				{
 					constructor: Altar,
 					params: {
 						image: "altar_balloon",
@@ -802,13 +796,6 @@ var G;
 				"TBD..."
 			],
 			objects: [
-				{
-					constructor: Merlin,
-					params: {
-						x: 20,
-						y: 22
-					}
-				},
 				{
 					constructor: Altar,
 					params: {
@@ -989,6 +976,10 @@ var G;
 		}
 	};
 
+	// Stores objects of previous levels
+	var levelObjects = {};
+	var prevLevel = 0;
+
 	function loadLevel() {
 		PS.dbEvent(DB_NAME, "level_loaded", levelIndex);
 
@@ -1018,11 +1009,20 @@ var G;
 		}
 		
 		// Add all objects to level
+		levelObjects[prevLevel] = objects;
 		objects = {};
 		objectIdIterator = 0;
-		for (var obj of LEVEL_DATA[levelIndex].objects) {
-			new obj.constructor(obj.params);
+		if (levelObjects[levelIndex]) {
+			for (var obj of Object.keys(levelObjects[levelIndex])) {
+				new levelObjects[obj].constructor(levelObjects[obj].spawnParams());
+			}
+		} else {
+			for (var obj of LEVEL_DATA[levelIndex].objects) {
+				new obj.constructor(obj.params);
+			}
 		}
+
+		prevLevel = levelIndex;
 	};
 
 	function onLevelImageLoaded(image) {
@@ -1036,6 +1036,15 @@ var G;
 			if (levelImage.data[i * 4 + 2] == 255) {
 				console.log("LevelLoad: Placing Merlin");
 				new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
+			}
+			if (levelImage.data[i * 4 + 1] == 255) {
+				console.log("LevelLoad: Placing Door");
+				new Door({ x: i % image.width, y: Math.floor(i / image.width) });
+			}
+			
+			if (levelImage.data[i * 4 + 1] == 128) {
+				console.log("LevelLoad: Placing Back Door");
+				new DoorPrev({ x: i % image.width, y: Math.floor(i / image.width) });
 			}
 			// If the red channel of the level image is > 128, then that is a wall section
 			if (levelImage.data[i * 4] > 128) {
