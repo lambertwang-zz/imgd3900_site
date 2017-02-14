@@ -69,7 +69,7 @@ var G;
 			this.id = objectIdIterator;
 			objects[objectIdIterator] = this;
 			objectIdIterator++;
-	
+
 			return this;
 		}
 
@@ -123,7 +123,7 @@ var G;
 			this.xPrev = this.x;
 			this.yPrev = this.y;
 		}
-		
+
 		clearCollisionMap() {
 			for (var i = Math.max(0, this.xPrev); i < Math.min(levelImage.width, this.xPrev + this.image.width); i++) {
 				for (var j = Math.max(0, this.yPrev); j < Math.min(levelImage.height, this.yPrev + this.image.height); j++) {
@@ -138,7 +138,7 @@ var G;
 			}
 			// Compute collision bounding box
 			var collisions = checkCollision(
-				this.boundingBox.left - 1, 
+				this.boundingBox.left - 1,
 				this.boundingBox.top - 1,
 				this.boundingBox.right - this.boundingBox.left + 2,
 				this.boundingBox.bot - this.boundingBox.top + 2);
@@ -425,7 +425,7 @@ var G;
 			this.heightOffset = 8;
 			this.width = 2;
 			this.widthOffset = 2;
-		
+
 		}
 	}
 
@@ -435,7 +435,7 @@ var G;
 			this.type = "troll";
 			this.image = SPRITE_DATA.troll;
 			this.frameSpeed = 20;
-			
+
 			this.width = 9;
 			this.height = 11;
 			this.widthOffset = 0;
@@ -449,7 +449,7 @@ var G;
 				return;
 			}
 			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
-			
+
 			if (controls.left) {
 				this.image = SPRITE_DATA.troll_walk;
 				this.spriteInverted = true;
@@ -544,7 +544,7 @@ var G;
 		tick() {
 			if (this.target) {
 				if (this.target.move(
-						controls.mouseX + player.x - WIDTH/2 - 2 - this.target.x, 
+						controls.mouseX + player.x - WIDTH/2 - 2 - this.target.x,
 						controls.mouseY + player.y - HEIGHT/2 - 3 - this.target.y)) {
 					this.drop();
 				}
@@ -600,7 +600,7 @@ var G;
 			this.statusText = [
 				"Wow, a magic balloon!"
 			];
-			
+
 		}
 
 		draw() {
@@ -713,7 +713,7 @@ var G;
 			imageData: null
 		},
 	};
-	
+
 	var LEVEL_DIR = "levels/";
 	var LEVEL_DATA = [
 		{
@@ -812,7 +812,7 @@ var G;
 	// Sounds created using http://www.bfxr.net/ available under the Apache 2.0 License
 
 	/**
-	 * For some reason, the built-in alpha compositing 
+	 * For some reason, the built-in alpha compositing
 	 * is not working so I'm writing my own.
 	 */
 	var pixels = [];
@@ -844,9 +844,9 @@ var G;
 	};
 
 	function imageBlit(
-		image, screenX, screenY, 
-		imageX = 0, imageY = 0, 
-		imageWidth = Infinity, imageHeight = Infinity, 
+		image, screenX, screenY,
+		imageX = 0, imageY = 0,
+		imageWidth = Infinity, imageHeight = Infinity,
 		invert = false) {
 
 		if (image.pixelSize < 3) {
@@ -910,7 +910,7 @@ var G;
 		// Load all sprites
 		for (var sprite of Object.keys(SPRITE_DATA)) {
 			PS.imageLoad(
-				SPRITE_DIR + SPRITE_DATA[sprite].imageName, 
+				SPRITE_DIR + SPRITE_DATA[sprite].imageName,
 				onSpriteLoaded.bind(this, sprite));
 		}
 
@@ -978,7 +978,7 @@ var G;
 		// Load level terrain
  		levelImage = null;
 		PS.imageLoad(
-			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName, 
+			LEVEL_DIR + LEVEL_DATA[levelIndex].imageName,
 			onLevelImageLoaded, 4);
 	};
 
@@ -1078,7 +1078,7 @@ var G;
 		return collidedWith;
 	}
 
-	/** 
+	/**
 	 * Retrieves collisions at a specific point.
 	 * Uses screen coordinates
 	 */
