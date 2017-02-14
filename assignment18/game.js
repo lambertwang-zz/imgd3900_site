@@ -1050,7 +1050,7 @@ var G;
 		}
 
 		// Set level status text
-		if (levelObjects[levelIndex]) {
+		if (!levelObjects[levelIndex]) {
 			cycleTexts(LEVEL_DATA[levelIndex].statusText);
 		}
 
