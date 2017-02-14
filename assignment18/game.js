@@ -387,7 +387,7 @@ var G;
 			if (altar.tool) {
 				this.tool = new altar.tool();
 				PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
-				cycleTexts(this.tool.statusText);
+				showStatus(this.tool.statusText);
 			} else {
 				this.tool = null;
 			}
@@ -601,7 +601,6 @@ var G;
 				"Wow, a magic balloon!",
 				"Press Down/S to descend faster"
 			];
-
 		}
 
 		draw() {
@@ -1039,7 +1038,7 @@ var G;
 
 		// Set level status text
 		if (!levelObjects[levelIndex]) {
-			cycleTexts(LEVEL_DATA[levelIndex].statusText);
+			setTimeout(showStatus.bind(null, LEVEL_DATA[levelIndex].statusText), 1000);
 		}
 
 		prevLevel = levelIndex;
@@ -1051,16 +1050,15 @@ var G;
 		}, 1000);
 	}
 
-	var textTimeout = null;
-	function cycleTexts(textList, index = 0) {
-		PS.statusText(textList[index++]);
-		if (index < textList.length) {
-			if (textTimeout != null) {
-				clearTimeout(textTimeout);
-				textTimeout = null;
-			}
-			textTimeout = setTimeout(cycleTexts.bind(null, textList, index), 2000);
+	var textTimeout;
+	function showStatus(textList, i=0) {
+		PS.statusText(textList[i]);
+		if (i == textList.length-1) {
+			// Just showed the last text, exit
+			return;
 		}
+		clearTimeout(textTimeout);
+		textTimeout = setTimeout(showStatus.bind(null, textList, i+1), 2000);
 	}
 
 	/**
@@ -1184,7 +1182,7 @@ var G;
 					}
 				}
 			}
-		}  else {
+		} else {
 			PS.border(PS.ALL, PS.ALL, 0);
 			PS.glyph(PS.ALL, PS.ALL, "");
 		}
