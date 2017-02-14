@@ -638,79 +638,76 @@ var G;
 		}
 	}
 
+	class Bow extends GameObject {
+		constructor(params) {
+			super(params);
+			this.altarImage = SPRITE_DATA.altar_bow
+		}
+	}
+
 	/** Game data */
 
 	var SPRITE_DIR = "sprites/";
 	var SPRITE_DATA = {
 		merlin: {
 			imageName: "merlin.png",
-			imageData: null
 		},
 		merlin_walk: {
 			imageName: "merlin.walk.png",
-			imageData: null,
 			frames: 3,
 			width: 4
 		},
 		troll: {
 			imageName: "troll.png",
-			imageData: null
 		},
 		troll_walk: {
 			imageName: "troll.walk.png",
-			imageData: null,
 			frames: 4,
 			width: 12
 		},
 		staff: {
 			imageName: "staff.png",
-			imageData: null
 		},
 		staff_active: {
 			imageName: "staff.active.png",
-			imageData: null
 		},
 		box: {
 			imageName: "box.png",
-			imageData: null
 		},
 		box_active: {
 			imageName: "box.active.png",
-			imageData: null,
 			frames: 4,
 			width: 5
 		},
 		door: {
 			imageName: "door.png",
-			imageData: null
 		},
 		door_prev: {
 			imageName: "door.prev.png",
-			imageData: null
 		},
 		altar: {
 			imageName: "altar.png",
-			imageData: null
 		},
 		altar_staff: {
 			imageName: "altar.staff.png",
-			imageData: null,
 			frames: 2,
 			width: 4
 		},
 		altar_balloon: {
 			imageName: "altar.balloon.png",
-			imageData: null,
+			frames: 2,
+			width: 4
+		},
+		altar_bow: {
+			imageName: "altar.bow.png",
 			frames: 2,
 			width: 4
 		},
 		balloon: {
 			imageName: "balloon.png",
-			imageData: null
 		},
 		balloon_used: {
 			imageName: "balloon.used.png",
-			imageData: null
 		},
 	};
 
@@ -731,10 +728,9 @@ var G;
 			imageName: "level2.png",
 			statusText: [
 				"Debris blocks my way",
-				"Up/W to jump"
+				"Press Up/W to jump"
 			],
-			objects: [
-			]
+			objects: []
 		},
 		{
 			imageName: "level3.png",
@@ -742,49 +738,36 @@ var G;
 				"What's that? A magic staff?",
 				"Maybe I should grab it..."
 			],
-			objects: [
-				{
-					constructor: Box,
-					params: { x: 70, y: 66 }
-				},
-				{
-					constructor: Box,
-					params: { x: 72, y: 61 }
-				},
-
-				{
-					constructor: Altar,
-					params: { image: "altar_staff", x: 54, y: 66, tool: Staff }
-				}
-			]
+			objects: []
 		},
 		{
 			imageName: "level4.png",
-			statusText: [
-				"Yet more rooms",
-				"My clairvoyance is blocked...",
-				"I must find out why..."
-			],
-			objects: [
-				{
-					constructor: Altar,
-					params: {
-						image: "altar_balloon",
-						x: 140,
-						y: 69,
-						tool: Balloon
-					}
-				}
-			]
+			statusText: [""],
+			objects: []
 		},
 		{
 			imageName: "level5.png",
+			statusText: [""],
+			objects: []
+		},
+		{
+			imageName: "level6.png",
 			statusText: [
-				"TBD..."
+				"My clairvoyance is blocked!",
+				"I must find out why..."
 			],
-			objects: [
-			]
-		}
+			objects: []
+		},
+		{
+			imageName: "level7.png",
+			statusText: [""],
+			objects: []
+		},
+		{
+			imageName: "level8.png",
+			statusText: [""],
+			objects: []
+		},
 	];
 
 	/** Begin engine code */
@@ -991,7 +974,7 @@ var G;
 		// Add new objects to level
 		objectIdIterator = 0;
 		if (levelObjects[levelIndex]) {
-			for (var obj of Object.keys(levelObjects[levelIndex])) {
+			for (var obj in levelObjects[levelIndex]) {
 				if (!levelObjects[levelIndex][obj].dontRegenerate) {
 					new levelObjects[levelIndex][obj].constructor(levelObjects[levelIndex][obj].spawnParams());
 				}
@@ -1008,18 +991,57 @@ var G;
 		for (var i = 0; i < levelImage.width * levelImage.height; i++) {
 			objectCollisionMap[i] = {};
 			if (!levelObjects[levelIndex]) {
-				// Blue pixel represents merlin
-				if (levelImage.data[i * 4 + 2] == 255) {
-					console.log("LevelLoad: Placing Merlin");
-					new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
-				}
+				// #00FF00 pixel represents merlin
 				if (levelImage.data[i * 4 + 1] == 255) {
-					console.log("LevelLoad: Placing Door");
-					new Door({ x: i % image.width, y: Math.floor(i / image.width) });
-				}
-				if (levelImage.data[i * 4 + 1] == 128) {
-					console.log("LevelLoad: Placing Back Door");
-					new DoorPrev({ x: i % image.width, y: Math.floor(i / image.width) });
+					console.log("LevelLoad: Placing Merlin at", i % image.width, Math.floor(i / image.width));
+					new Merlin({ x: i % image.width, y: Math.floor(i / image.width) });
+
+				} else if (levelImage.data[i * 4 + 1] == 192) {
+					// #00A000 pixel represents exit door
+					if (levelImage.data[i * 4 + 2] == 0) {
+						console.log("LevelLoad: Placing Door at", i % image.width, Math.floor(i / image.width));
+						new Door({ x: i % image.width, y: Math.floor(i / image.width) });
+					// #00A080 pixel represents entry door
+					} else if (levelImage.data[i * 4 + 2] == 128) {
+						console.log("LevelLoad: Placing Back Door at", i % image.width, Math.floor(i / image.width));
+						new DoorPrev({ x: i % image.width, y: Math.floor(i / image.width) });
+					}
+
+				// #008000 pixel represents boxes
+				} else if (levelImage.data[i * 4 + 1] == 128) {
+					console.log("LevelLoad: Placing Box at", i % image.width, Math.floor(i / image.width));
+					new Box({ x: i % image.width, y: Math.floor(i / image.width) });
+
+				// #0040XX pixel represents altars
+				} else if (levelImage.data[i * 4 + 1] == 64) {
+					console.log("LevelLoad: Placing Altar at", i % image.width, Math.floor(i / image.width));
+					var params = {
+						x: i % image.width,
+						y: Math.floor(i / image.width),
+						tool: undefined,
+						image: ""
+					}
+					// Green value represents the altar's item;
+					switch (levelImage.data[i*4 + 2]) {
+						case 0: // #000040 -> Empty
+							break;
+						case 64: // #004040 -> Staff
+							params.image = "altar_staff";
+							params.tool = Staff;
+							break;
+						case 128: // #008040 -> Balloon
+							params.image = "altar_balloon";
+							params.tool = Balloon;
+							break;
+						case 192: // #00A040 -> Bow
+							params.image = "altar_bow";
+							params.tool = Bow;
+							break;
+						case 255: // #00FF40 -> ???
+							break;
+					}
+					console.log("LevelLoad: Altar item is " + params.image);
+					new Altar(params);
 				}
 			}
 
