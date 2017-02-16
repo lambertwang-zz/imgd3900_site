@@ -27,18 +27,25 @@ var MAX_ALT = 4;
 
 class GameObject {
 	constructor(objectData) {
-		/** User settable parameters */
+		/** Start User settable parameters */
+		
+		// String identifier for object
+		this.type = null;
+
 		this.x = 0;
 		this.y = 0;
+
 		// Refers to collision box dimensions, not sprite dimensions
 		this.width = -1;
 		this.height = -1;
 		this.widthOffset = 0;
 		this.heightOffset = 0;
+
 		// If true does not have any collision map
 		this.ephemeral = false;
 		// If true cannot move through other objects
 		this.solid = false;
+
 		// If true, does not carry over between levels
 		/**
 		 * This is mostly used for tools.
@@ -51,7 +58,13 @@ class GameObject {
 		 * Must be a number between 0 and 4 (inclusive) otherwise the object will not draw.
 		 */
 		this.altitude = 0;
-		this.type = null;
+
+		
+		// Mirrored along X
+		this.spriteXInverted = false;
+		// Mirrored along Y
+		this.spriteYInverted = false;
+
 		/** End of user settable parameters */
 		if (objectData) {
 			for (var key of Object.keys(objectData)) {
@@ -78,10 +91,6 @@ class GameObject {
 		this.frameIndex = 0;
 		this.frameStep = 0;
 		this.frameSpeed = 0;
-		// Mirrored along X
-		this.spriteXInverted = false;
-		// Mirrored along Y
-		this.spriteYInverted = false;
 
 		// Set unique object ID
 		this.id = objectIdIterator++;
@@ -99,7 +108,9 @@ class GameObject {
 			type: this.type,
 			ephemeral: this.ephemeral,
 			solid: this.solid,
-			dontRegenerate: this.dontRegenerate
+			dontRegenerate: this.dontRegenerate,
+			spriteXInverted: this.spriteXInverted,
+			spriteYInverted: this.spriteYInverted
 		}
 	}
 
@@ -114,18 +125,16 @@ class GameObject {
 				this.width = this.image.width;
 			}
 			if (this.height == -1) {
-				this.height = this.image.imageData.height;
+				this.height = this.image.height;
 			}
 			// Clear collision map
 			if (!this.ephemeral) {
 				this.clearCollisionMap();
 			}
 
-			this.offsetWidthEff = (this.spriteXInverted ? this.image.width - this.width : this.widthOffset);
-			this.widthEff = (this.spriteXInverted ? this.image.width - this.width : this.widthOffset);
+			this.offsetWidthEff = (this.spriteXInverted ? (this.image.width - this.widthOffset - this.width) : this.widthOffset);
 			
-			this.offsetHeightEff = (this.spriteYInverted ? this.image.height - this.height : this.heightOffset);
-			this.heightEff = (this.spriteYInverted ? this.image.height - this.height : this.heightOffset);
+			this.offsetHeightEff = (this.spriteYInverted ? (this.image.height - this.heightOffset - this.height) : this.heightOffset);
 
 			// Compute bounding box
 			this.boundingBox = {
@@ -160,6 +169,9 @@ class GameObject {
 		if (this.ephemeral || !this.boundingBox) {
 			return;
 		}
+		if (this.boundingBox.bot - this.boundingBox.top + 2 <= 1) {
+			console.log(this.boundingBox.bot - this.boundingBox.top + 2);
+		}
 		// Compute collision bounding box
 		var collisions = checkCollision(
 			this.boundingBox.left - 1,
@@ -177,13 +189,20 @@ class GameObject {
 		if (!this.image) {
 			return;
 		}
+		var drawXLoc = WIDTH / 2 + this.x - camera.x;
+		var drawYLoc = HEIGHT / 2 + this.y - camera.y;
+		if (drawXLoc + this.image.width < 0 ||
+			drawYLoc + this.image.height < 0 ||
+			drawXLoc >= WIDTH ||
+			drawYLoc >= HEIGHT) {
+			return;
+		}
 		if (this.image.frames) {
 			imageBlit(
 				this.image.imageData,
-				WIDTH / 2 + this.x - camera.x,
-				HEIGHT / 2 + this.y - camera.y,
-				this.image.width * this.frameIndex,
-				0, this.image.width, Infinity,
+				drawXLoc, drawYLoc,
+				this.image.width * this.frameIndex, 0, 
+				this.image.width, this.image.height,
 				this.spriteXInverted, this.spriteYInverted
 			);
 			this.frameStep++;
@@ -194,9 +213,9 @@ class GameObject {
 		} else {
 			imageBlit(
 				this.image.imageData,
-				WIDTH / 2 + this.x - camera.x,
-				HEIGHT / 2 + this.y - camera.y,
-				0, 0, Infinity, Infinity, 
+				drawXLoc, drawYLoc,
+				0, 0,
+				this.image.width, this.image.height,
 				this.spriteXInverted, this.spriteYInverted
 			);
 		}
@@ -369,27 +388,31 @@ function sendEvent(type, params = []) {
 var pixels = [];
 
 function setPixel(color, x, y) {
-	pixels[3 * (x + y * WIDTH)] = color[0];
-	pixels[3 * (x + y * WIDTH) + 1] = color[1];
-	pixels[3 * (x + y * WIDTH) + 2] = color[2];
+	var indexOffset = 3 * (x + y * WIDTH);
+	pixels[indexOffset] = color[0];
+	pixels[indexOffset + 1] = color[1];
+	pixels[indexOffset + 2] = color[2];
 };
 
 function getPixel(x, y) {
-	return [
-		pixels[3 * (x + y * WIDTH)],
-		pixels[3 * (x + y * WIDTH) + 1],
-		pixels[3 * (x + y * WIDTH) + 2]
-	];
+	var indexOffset = 3 * (x + y * WIDTH);
+	return pixels.slice(indexOffset, indexOffset + 3);
 };
 
 function drawPixel(color, x, y) {
+	if (x < 0 || x >= WIDTH ||
+		y < 0 || y >= HEIGHT) {
+		console.log("drawPixel: Pixel out of range: (" + x + ", " + y + ")");
+		return;
+	}
 	var newPixel = getPixel(x, y);
-	var alpha = color.length > 3 ? Math.min(color[3], 255) / 255 : 1.0;
+	var alpha = color.length > 3 ? Math.min(color[3], 255) / 255 : 1;
 
+	var alpha_i = (1 - alpha);
 	// Alpha compositing
-	newPixel[0] = Math.min((color[0] * alpha + newPixel[0] * (1 - alpha)) / (alpha + (1 - alpha)), 255);
-	newPixel[1] = Math.min((color[1] * alpha + newPixel[1] * (1 - alpha)) / (alpha + (1 - alpha)), 255);
-	newPixel[2] = Math.min((color[2] * alpha + newPixel[2] * (1 - alpha)) / (alpha + (1 - alpha)), 255);
+	newPixel[0] = Math.min((color[0] * alpha + newPixel[0] * alpha_i), 255);
+	newPixel[1] = Math.min((color[1] * alpha + newPixel[1] * alpha_i), 255);
+	newPixel[2] = Math.min((color[2] * alpha + newPixel[2] * alpha_i), 255);
 
 	setPixel(newPixel, x, y);
 };
@@ -404,30 +427,27 @@ function imageBlit(
 		console.log("Error: imageBlit() requires at least 3 channels");
 		return;
 	}
-	var i_init = screenX < 0 ? -screenX : imageX;
-	var i = i_init;
-	var i_range = Math.min(image.width, imageX + imageWidth);
-	while (i < i_range) {
-		var j_init = screenY < 0 ? -screenY : imageY;
-		var j = j_init;
-		var j_range = Math.min(image.height, imageY + imageHeight);
-		while (j < j_range) {
-			var pixel_x = (invertX ? (i_range + i_init - i - 1) : i) + screenX - imageX;
-			var pixel_y = (invertY ? (j_range + j_init - j - 1) : j) + screenY - imageY;
 
-			if (pixel_x >= 0 &&
-				pixel_x < WIDTH &&
-				pixel_y >= 0 &&
-				pixel_y < HEIGHT) {
-				drawPixel(
-					image.data.slice(
-						(i + j * image.width) * image.pixelSize,
-						(i + j * image.width) * image.pixelSize + image.pixelSize),
-					pixel_x, pixel_y);
-			}
-			j++;
+	var i_init = (screenX < 0 ? -screenX : 0) + imageX;
+	var j_init = (screenY < 0 ? -screenY : 0) + imageY;
+
+	var i_range = Math.min(image.width, imageX + imageWidth);
+	var j_range = Math.min(image.height, imageY + imageHeight) - (invertY ? j_init : 0);
+	for (var i = i_init; i < i_range; i++) {
+		var pixel_x = (invertX ? (i_range + i_init - i - 1) : i) + screenX - imageX;
+		if (pixel_x >= WIDTH || pixel_x < 0) {
+			continue;
 		}
-		i++
+		for (var j = (invertY ? 0 : j_init); j < j_range; j++) {
+			var pixel_y = (invertY ? (j_range + j_init - j - 1) : j) + screenY - imageY;
+			if (pixel_y >= HEIGHT || pixel_y < 0) {
+				continue;
+			}
+			imageDataIndex = (i + j * image.width) * image.pixelSize;
+			drawPixel(
+				image.data.slice(imageDataIndex, imageDataIndex + image.pixelSize),
+				pixel_x, pixel_y);
+		}
 	}
 };
 
@@ -513,6 +533,9 @@ function loadLevel() {
 };
 
 function onLevelImageLoaded(image) {
+	if (levelImage != null) {
+		return;
+	}
 	levelImage = image;
 
 	// Set previous level objects
@@ -527,40 +550,55 @@ function onLevelImageLoaded(image) {
 			}
 		}
 	} else {
-		for (var obj of LEVEL_DATA[levelIndex].objects) {
-			new obj.constructor(obj.params);
+		if (LEVEL_DATA[levelIndex].objects) {
+			for (var obj of LEVEL_DATA[levelIndex].objects) {
+				new obj.constructor(obj.params);
+			}
 		}
 	}
 
-	console.log("Generating level " + (levelIndex+1));
+	console.log("Generating level " + (levelIndex + 1));
 	// Reads pixels and constructs collision map
 	objectCollisionMap = [];
 	for (var i = 0; i < levelImage.width * levelImage.height; i++) {
 		objectCollisionMap[i] = {};
 		if (!levelObjects[levelIndex]) {
-			var newObj = null;
-			var newObjParams = {
-				x: i % image.width, 
-				y: Math.floor(i / image.width)
-			};
-			var objData = null;
-			if (OBJECT_DATA[levelImage.data[i * 4 + 1]]) {
-				if (OBJECT_DATA[levelImage.data[i * 4 + 1]][levelImage.data[i * 4 + 2]]) {
-					objData = OBJECT_DATA[levelImage.data[i * 4 + 1]][levelImage.data[i * 4 + 2]];
-				} else if (OBJECT_DATA[levelImage.data[i * 4 + 1]].default) {
-					objData = OBJECT_DATA[levelImage.data[i * 4 + 1]].default;
-				}
-			}
-			if (objData) {
-				if (objData.params) {
-					for (var param of Object.keys(objData.params)) {
-						newObjParams[param] = objData.params[param];
+			var objectTypeId = levelImage.data[i * 4 + 1];
+			var objectTypeSubId = levelImage.data[i * 4 + 2];
+			if (objectTypeId != 0) {
+				var objectTypeEntry = OBJECT_DATA[objectTypeId];
+				var objData = null;
+				if (objectTypeEntry) {
+					if (objectTypeEntry[objectTypeSubId]) {
+						objData = objectTypeEntry[objectTypeSubId];
+					} else if (objectTypeEntry.default) {
+						objData = objectTypeEntry.default;
 					}
 				}
-				newObj = new objData.constructor(newObjParams);
-			}
-			if (newObj) {
-				console.log("LevelLoad: Placing " + newObj.type + " at", newObjParams.x, newObjParams.y);
+
+				var newObjParams = {
+					x: i % image.width, 
+					y: Math.floor(i / image.width)
+				};
+				var newObj = null;
+				if (objData) {
+					if (objData.params) {
+						for (var param of Object.keys(objData.params)) {
+							newObjParams[param] = objData.params[param];
+						}
+					}
+					newObj = new objData.constructor(newObjParams);
+				}
+
+				if (newObj) {
+					console.log(
+						"LevelLoad: Placing " + newObj.type + 
+						" at", newObjParams.x, newObjParams.y);
+				} else {
+					console.log(
+						"LevelLoad: Unrecognized object token " + levelImage.data[i * 4 + 1] + 
+						" at", newObjParams.x, newObjParams.y);
+				}
 			}
 		}
 
@@ -622,7 +660,8 @@ function checkCollision(x, y, width = 0, height = 0) {
 function getCollisionAtScreen(x, y) {
 	var xPos = x + camera.x - WIDTH/2;
 	var yPos = y + camera.y - HEIGHT/2;
-	if (xPos < 0 || yPos < 0 || xPos >= levelImage.width || yPos >= levelImage.height) {
+	if (xPos < 0 || xPos >= levelImage.width ||
+		yPos < 0 || yPos >= levelImage.height) {
 		return {};
 	}
 	var collidedWith = {};
@@ -692,9 +731,11 @@ function engineTick() {
 		}
 
 		if (levelChangeReady != 0) {
-			levelIndex += levelChangeReady;
+			if (levelIndex + levelChangeReady >= 0 && levelIndex + levelChangeReady < LEVEL_DATA.length) {
+				levelIndex += levelChangeReady;
+				loadLevel();
+			}
 			levelChangeReady = 0;
-			loadLevel();
 		}
 	}
 

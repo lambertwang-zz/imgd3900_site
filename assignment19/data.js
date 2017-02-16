@@ -86,8 +86,6 @@ LEVEL_DATA = [
 			"Where am I?",
 			"I need find the exit!",
 			"Arrow Keys/WASD to move"
-		],
-		objects: [
 		]
 	},
 	{
@@ -95,44 +93,41 @@ LEVEL_DATA = [
 		statusText: [
 			"Debris blocks my way",
 			"Press Up/W to jump"
-		],
-		objects: []
+		]
 	},
 	{
 		imageName: "level3.png",
 		statusText: [
 			"What's that? A magic staff?",
 			"Maybe I should grab it..."
-		],
-		objects: []
+		]
 	},
 	{
 		imageName: "level4.png",
-		statusText: [""],
-		objects: []
+		statusText: [""]
 	},
 	{
 		imageName: "level5.png",
-		statusText: [""],
-		objects: []
+		statusText: [""]
 	},
 	{
 		imageName: "level6.png",
 		statusText: [
 			"My clairvoyance is blocked!",
 			"I must find out why..."
-		],
-		objects: []
+		]
 	},
 	{
 		imageName: "level7.png",
-		statusText: [""],
-		objects: []
+		statusText: ["Something smells here..."]
 	},
 	{
 		imageName: "level8.png",
-		statusText: [""],
-		objects: []
+		statusText: [""]
+	},
+	{
+		imageName: "level9.png",
+		statusText: [""]
 	},
 ];
 
@@ -156,6 +151,14 @@ OBJECT_DATA = {
 			params: {
 				tool: Staff,
 				image: "altar_staff"
+			}
+		},
+		65: {
+			constructor: Altar,
+			params: {
+				tool: Staff,
+				image: "altar_staff",
+				spriteYInverted: true
 			}
 		},
 		128: {

@@ -16,4 +16,11 @@ class Altar extends GameObject {
 
 		this.tool = params.tool;
 	}
+
+	spawnParams() {
+		var ret = super.spawnParams();
+		ret.tool = this.tool;
+
+		return ret;
+	}
 }

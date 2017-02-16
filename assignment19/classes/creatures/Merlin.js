@@ -18,7 +18,7 @@ class Merlin extends GameObject {
 		this.stunned = 0;
 		this.health = 2;
 
-		this.touchingAltar = false; // Currently touching altar
+		this.touchingAltar = true; // Currently touching altar
 		this.touchedAltar = false; // Touched altar last frame
 
 		this.touchingDoor = true; // Currently touching altar
@@ -143,10 +143,10 @@ class Merlin extends GameObject {
 			this.tool = null;
 		}
 		if (temp) {
+			temp.release();
 			altar.image = temp.altarImage;
 			altar.tool = temp.constructor;
 			objectDeletionQueue[temp.id] = temp;
-			temp.release();
 		} else {
 			altar.image = SPRITE_DATA.altar;
 			altar.tool = null;
