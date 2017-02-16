@@ -10,7 +10,6 @@
  * Authors: Joseph (jctblackman@wpi.edu) and Lambert (lwang5@wpi.edu)
  */
 
-
 // Draws collision map on screen.
 var DEBUG_DRAW = false;
 

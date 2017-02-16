@@ -21,6 +21,10 @@ var objectIdIterator = 0;
 var cameraTarget = null;
 var camera = { x: 0, y: 0 };
 
+// Range for object rendering altitude
+var MIN_ALT = 0;
+var MAX_ALT = 4;
+
 class GameObject {
 	constructor(objectData) {
 		/** User settable parameters */
@@ -41,6 +45,12 @@ class GameObject {
 		 * Because merlin constructs new tools each time he is constructed
 		 */
 		this.dontRegenerate = false;
+
+		/**
+		 * Rendering priority.
+		 * Must be a number between 0 and 4 (inclusive) otherwise the object will not draw.
+		 */
+		this.altitude = 0;
 		this.type = null;
 		/** End of user settable parameters */
 		if (objectData) {
@@ -68,7 +78,10 @@ class GameObject {
 		this.frameIndex = 0;
 		this.frameStep = 0;
 		this.frameSpeed = 0;
-		this.spriteInverted = false;
+		// Mirrored along X
+		this.spriteXInverted = false;
+		// Mirrored along Y
+		this.spriteYInverted = false;
 
 		// Set unique object ID
 		this.id = objectIdIterator++;
@@ -82,8 +95,11 @@ class GameObject {
 			x: this.x,
 			y: this.y,
 			image: this.image,
-			tool: this.tool,
-			alt_tool: this.alt_tool,
+			altitude: this.altitude,
+			type: this.type,
+			ephemeral: this.ephemeral,
+			solid: this.solid,
+			dontRegenerate: this.dontRegenerate
 		}
 	}
 
@@ -105,14 +121,18 @@ class GameObject {
 				this.clearCollisionMap();
 			}
 
-			this.offsetWidthEff = (this.spriteInverted ? this.image.width - this.width : this.widthOffset);
-			this.widthEff = (this.spriteInverted ? this.image.width - this.width : this.widthOffset)
+			this.offsetWidthEff = (this.spriteXInverted ? this.image.width - this.width : this.widthOffset);
+			this.widthEff = (this.spriteXInverted ? this.image.width - this.width : this.widthOffset);
+			
+			this.offsetHeightEff = (this.spriteYInverted ? this.image.height - this.height : this.heightOffset);
+			this.heightEff = (this.spriteYInverted ? this.image.height - this.height : this.heightOffset);
+
 			// Compute bounding box
 			this.boundingBox = {
 				left: Math.max(0, this.x + this.offsetWidthEff),
-				right: Math.min(levelImage.width, this.x + (this.spriteInverted ? (this.image.width - this.widthOffset) : (this.widthOffset + this.width))),
-				top: Math.max(0, this.y + this.heightOffset),
-				bot: Math.min(levelImage.height, this.y + this.heightOffset + this.height)
+				right: Math.min(levelImage.width, this.x + (this.spriteXInverted ? (this.image.width - this.widthOffset) : (this.widthOffset + this.width))),
+				top: Math.max(0, this.y + this.offsetHeightEff),
+				bot: Math.min(levelImage.height, this.y + (this.spriteYInverted ? (this.image.height - this.heightOffset) : (this.heightOffset + this.height)))
 			};
 			// Update collision map
 			if (!this.ephemeral) {
@@ -163,7 +183,8 @@ class GameObject {
 				WIDTH / 2 + this.x - camera.x,
 				HEIGHT / 2 + this.y - camera.y,
 				this.image.width * this.frameIndex,
-				0, this.image.width, Infinity, this.spriteInverted
+				0, this.image.width, Infinity,
+				this.spriteXInverted, this.spriteYInverted
 			);
 			this.frameStep++;
 			if (this.frameStep > this.frameSpeed) {
@@ -175,7 +196,8 @@ class GameObject {
 				this.image.imageData,
 				WIDTH / 2 + this.x - camera.x,
 				HEIGHT / 2 + this.y - camera.y,
-				0, 0, Infinity, Infinity, this.spriteInverted
+				0, 0, Infinity, Infinity, 
+				this.spriteXInverted, this.spriteYInverted
 			);
 		}
 	}
@@ -376,7 +398,7 @@ function imageBlit(
 	image, screenX, screenY,
 	imageX = 0, imageY = 0,
 	imageWidth = Infinity, imageHeight = Infinity,
-	invert = false) {
+	invertX = false, invertY = false) {
 
 	if (image.pixelSize < 3) {
 		console.log("Error: imageBlit() requires at least 3 channels");
@@ -386,11 +408,13 @@ function imageBlit(
 	var i = i_init;
 	var i_range = Math.min(image.width, imageX + imageWidth);
 	while (i < i_range) {
-		var j = screenY < 0 ? -screenY : imageY;
+		var j_init = screenY < 0 ? -screenY : imageY;
+		var j = j_init;
 		var j_range = Math.min(image.height, imageY + imageHeight);
 		while (j < j_range) {
-			var pixel_x = (invert ? (i_range + i_init - i - 1) : i) + screenX - imageX;
-			var pixel_y = j + screenY - imageY;
+			var pixel_x = (invertX ? (i_range + i_init - i - 1) : i) + screenX - imageX;
+			var pixel_y = (invertY ? (j_range + j_init - j - 1) : j) + screenY - imageY;
+
 			if (pixel_x >= 0 &&
 				pixel_x < WIDTH &&
 				pixel_y >= 0 &&
@@ -614,12 +638,14 @@ function drawLevel() {
 }
 
 /** Controls and state updates */
+// TODO: Make the controls not incredibly game-specific
 var controls = {
 	paused: true,
 	left: false,
 	right: false,
 	up: false,
 	down: false,
+	space: false,
 	mouseX: -1,
 	mouseY: -1,
 }
@@ -657,8 +683,12 @@ function engineTick() {
 		}
 		// keys.reverse() is a hacky way of giving merlin rendering priority
 		drawLevel();
-		for (var obj of Object.keys(objects).reverse()) {
-			objects[obj].draw();
+		for (var alt = MIN_ALT; alt <= MAX_ALT; alt++) {
+			for (var obj of Object.keys(objects)) {
+				if (objects[obj].altitude == alt) {
+					objects[obj].draw();
+				}
+			}
 		}
 
 		if (levelChangeReady != 0) {
@@ -694,6 +724,7 @@ function engineTick() {
 	}
 }
 
+// TODO: add events for keypresses
 function keyDown(key) {
 	switch (key) {
 		case PS.KEY_ARROW_LEFT:
@@ -711,6 +742,9 @@ function keyDown(key) {
 		case PS.KEY_ARROW_DOWN:
 		case 115:
 			controls.down = true;
+			break;
+		case 32:
+			controls.space = true;
 			break;
 		case PS.KEY_F1:
 			DEBUG_DRAW = !DEBUG_DRAW;
@@ -745,6 +779,9 @@ function keyUp(key) {
 		case PS.KEY_ARROW_DOWN:
 		case 115:
 			controls.down = false;
+			break;
+		case 32:
+			controls.space = false;
 			break;
 	}
 }
