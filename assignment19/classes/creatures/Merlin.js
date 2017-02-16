@@ -109,15 +109,11 @@ class Merlin extends GameObject {
 				this.move(1, -1);
 			}
 			this.stunned = 30;
-		} else if (other.type == "door") {
+		} else if (other.type == "door" || other.type == "door_prev") {
 			this.touchedDoor = true;
 			if (!this.touchingDoor) {
-				levelChangeReady = 1;
-			}
-		} else if (other.type == "door_prev") {
-			this.touchedDoor = true;
-			if (!this.touchingDoor) {
-				levelChangeReady = -1;
+				console.log("Touched door target: " + other.levelTarget);
+				levelChangeReady = other.levelTarget;
 			}
 		} else if (other.type == "altar") {
 			this.touchedAltar = true;

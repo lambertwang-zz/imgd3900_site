@@ -129,13 +129,38 @@ LEVEL_DATA = [
 		imageName: "level9.png",
 		statusText: [""]
 	},
+	{
+		imageName: "level10.png",
+		statusText: [""]
+	},
 ];
 
 OBJECT_DATA = {
 	255: { default: { constructor: Merlin } },
+	193: {
+		default: { constructor: DoorPrev },
+		128: { 
+			constructor: DoorPrev,
+			params: {
+				spriteYInverted: true
+			}
+		}
+	},
 	192: {
 		default: { constructor: Door },
-		128: { constructor: DoorPrev }
+		128: { 
+			constructor: Door,
+			params: {
+				spriteYInverted: true
+			}
+		},
+		139: { 
+			constructor: Door,
+			params: {
+				spriteYInverted: true,
+				levelTarget: 9
+			}
+		}
 	},
 	128: { default: { constructor: Box } },
 	64: {

@@ -688,12 +688,9 @@ var controls = {
 	mouseX: -1,
 	mouseY: -1,
 }
-var levelChangeReady = 0;
+var levelChangeReady = levelIndex;
 
 function engineTick() {
-	if (controls.paused) {
-		// return;
-	}
 	if (levelImage) {
 		if (!controls.paused) {
 			// Update state
@@ -714,13 +711,13 @@ function engineTick() {
 			objectDeletionQueue = {};
 		}
 
-		// Render level and objects
 		// Move camera to follow cameraTarget
 		if (cameraTarget) {
 			camera.x = cameraTarget.x + Math.floor(cameraTarget.width / 2);
 			camera.y = cameraTarget.y + Math.floor(cameraTarget.height / 2);
 		}
-		// keys.reverse() is a hacky way of giving merlin rendering priority
+
+		// Render level and objects
 		drawLevel();
 		for (var alt = MIN_ALT; alt <= MAX_ALT; alt++) {
 			for (var obj of Object.keys(objects)) {
@@ -730,12 +727,14 @@ function engineTick() {
 			}
 		}
 
-		if (levelChangeReady != 0) {
-			if (levelIndex + levelChangeReady >= 0 && levelIndex + levelChangeReady < LEVEL_DATA.length) {
-				levelIndex += levelChangeReady;
+		// Change level (if necessary)
+		if (levelChangeReady != levelIndex) {
+			if (levelChangeReady >= 0 && levelChangeReady < LEVEL_DATA.length) {
+				levelIndex = levelChangeReady;
 				loadLevel();
+			} else {
+				levelChangeReady = levelIndex;
 			}
-			levelChangeReady = 0;
 		}
 	}
 
@@ -792,12 +791,12 @@ function keyDown(key) {
 			break;
 		case PS.KEY_F2:
 			console.log("DEBUG: Skipped level");
-			levelChangeReady = 1;
+			levelChangeReady = levelIndex + 1;
 			sendEvent("debug");
 			break;
 		case PS.KEY_F3:
 			console.log("DEBUG: Back a level");
-			levelChangeReady = -1;
+			levelChangeReady = levelIndex - 1;
 			sendEvent("debug");
 			break;
 	}

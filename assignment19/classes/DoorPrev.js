@@ -17,5 +17,17 @@ class DoorPrev extends GameObject {
 		this.width = 2;
 		this.widthOffset = 2;
 
+		if (params.levelTarget) {
+			this.levelTarget = params.levelTarget;
+		} else {
+			this.levelTarget = levelIndex - 1;
+		}
+	}
+
+	spawnParams() {
+		var ret = super.spawnParams();
+		ret.levelTarget = this.levelTarget;
+
+		return ret;
 	}
 }

@@ -16,5 +16,19 @@ class Door extends GameObject {
 		this.heightOffset = 8;
 		this.width = 2;
 		this.widthOffset = 2;
+
+		console.log("Setting door target: " + params.levelTarget);
+		if (params.levelTarget) {
+			this.levelTarget = params.levelTarget;
+		} else {
+			this.levelTarget = levelIndex + 1;
+		}
+	}
+
+	spawnParams() {
+		var ret = super.spawnParams();
+		ret.levelTarget = this.levelTarget;
+
+		return ret;
 	}
 }
