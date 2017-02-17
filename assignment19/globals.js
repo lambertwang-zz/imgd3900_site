@@ -33,8 +33,15 @@ var playerData = {
 var DB_NAME = "merlin_telemetry";
 
 globalEventListener["init"] = function() {
+	// Stop level from loading
+	levelChangeReady = levelIndex;
+
 	// Initialize Database
-	PS.dbInit(DB_NAME);
+	PS.dbInit(DB_NAME, {
+		login: function() {
+			levelChangeReady = 0;
+		}
+	});
 }
 
 globalEventListener["shutdown"] = function() {

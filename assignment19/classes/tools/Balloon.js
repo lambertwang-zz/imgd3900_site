@@ -37,7 +37,13 @@ class Balloon extends Tool {
 			// On ground or standing on something
 			this.yVel = 0;
 			if (controls.up || controls.space) {
-				this.yVel = -1.2;
+				if (!this.jumped) {
+					this.jumped = true;
+					this.yVel = -1.2;
+					this.move(0, -1);
+				}
+			} else {
+				this.jumped = false;
 			}
 		}
 		return true;

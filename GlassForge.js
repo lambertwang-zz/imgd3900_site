@@ -134,17 +134,8 @@ class GameObject {
 				this.clearCollisionMap();
 			}
 
-			this.offsetWidthEff = (this.spriteXInverted ? (this.image.width - this.widthOffset - this.width) : this.widthOffset);
-			
-			this.offsetHeightEff = (this.spriteYInverted ? (this.image.height - this.heightOffset - this.height) : this.heightOffset);
+			this.computeBoundingBox();
 
-			// Compute bounding box
-			this.boundingBox = {
-				left: Math.max(0, this.x + this.offsetWidthEff),
-				right: Math.min(levelImage.width, this.x + (this.spriteXInverted ? (this.image.width - this.widthOffset) : (this.widthOffset + this.width))),
-				top: Math.max(0, this.y + this.offsetHeightEff),
-				bot: Math.min(levelImage.height, this.y + (this.spriteYInverted ? (this.image.height - this.heightOffset) : (this.heightOffset + this.height)))
-			};
 			// Update collision map
 			if (!this.ephemeral) {
 				for (var i = this.boundingBox.left; i < this.boundingBox.right; i++) {
@@ -157,6 +148,19 @@ class GameObject {
 
 		this.xPrev = this.x;
 		this.yPrev = this.y;
+	}
+
+	computeBoundingBox() {
+		this.offsetWidthEff = (this.spriteXInverted ? (this.image.width - this.widthOffset - this.width) : this.widthOffset);
+		this.offsetHeightEff = (this.spriteYInverted ? (this.image.height - this.heightOffset - this.height) : this.heightOffset);
+
+		// Compute bounding box
+		this.boundingBox = {
+			left: Math.max(0, this.x + this.offsetWidthEff),
+			right: Math.min(levelImage.width, this.x + (this.spriteXInverted ? (this.image.width - this.widthOffset) : (this.widthOffset + this.width))),
+			top: Math.max(0, this.y + this.offsetHeightEff),
+			bot: Math.min(levelImage.height, this.y + (this.spriteYInverted ? (this.image.height - this.heightOffset) : (this.heightOffset + this.height)))
+		};
 	}
 
 	clearCollisionMap() {
@@ -238,47 +242,51 @@ class GameObject {
 		this.xStep += d_x;
 		this.yStep += d_y;
 		while (this.xStep > 1) {
-			this.xStep--;
 			var edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
 			if (Object.keys(edge).length > 0 || this.x + this.width >= levelImage.width) {
 				this.xStep = 0;
 				this.xVel = 0;
 				stopped = true;
 			} else {
+				this.xStep--;
 				this.x++;
+				this.computeBoundingBox();
 			}
 		}
 		while (this.xStep < -1) {
-			this.xStep++;
 			var edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
 			if (Object.keys(edge).length > 0 || this.x <= 0) {
 				this.xStep = 0;
 				this.xVel = 0;
 				stopped = true;
 			} else {
+				this.xStep++;
 				this.x--;
+				this.computeBoundingBox();
 			}
 		}
 		while (this.yStep > 1) {
-			this.yStep--;
 			var edge = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
-			if (Object.keys(edge).length > 0 || this.y + this.heighy >= levelImage.height) {
+			if (Object.keys(edge).length > 0 || this.y + this.height >= levelImage.height) {
 				this.yStep = 0;
 				this.yVel = 0;
 				stopped = true;
 			} else {
+				this.yStep--;
 				this.y++;
+				this.computeBoundingBox();
 			}
 		}
 		while (this.yStep < -1) {
-			this.yStep++;
 			var edge = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
 			if (Object.keys(edge).length > 0 || this.y <= 0) {
 				this.yStep = 0;
 				this.yVel = 0;
 				stopped = true;
 			} else {
+				this.yStep++;
 				this.y--;
+				this.computeBoundingBox();
 			}
 		}
 		return stopped;
@@ -478,7 +486,7 @@ function flushPixels() {
 
 /** Game initialization and loadingfunctions */
 
-var levelIndex = 0;
+var levelIndex = -1;
 var levelImage = null;
 
 var objectCollisionMap = [];
@@ -695,7 +703,7 @@ var controls = {
 	mouseX: -1,
 	mouseY: -1,
 }
-var levelChangeReady = levelIndex;
+var levelChangeReady = 0;
 
 function engineTick() {
 	if (levelImage) {
@@ -735,20 +743,21 @@ function engineTick() {
 			}
 		}
 
-		// Change level (if necessary)
-		if (levelChangeReady != levelIndex) {
-			if (levelChangeReady >= 0 && levelChangeReady < LEVEL_DATA.length) {
-				levelIndex = levelChangeReady;
-				loadLevel();
-			} else {
-				levelChangeReady = levelIndex;
-			}
-		}
 	}
 
 	sendEvent("afterRenderAll");
 
 	flushPixels();
+
+	// Change level (if necessary)
+	if (levelChangeReady != levelIndex) {
+		if (levelChangeReady >= 0 && levelChangeReady < LEVEL_DATA.length) {
+			levelIndex = levelChangeReady;
+			loadLevel();
+		} else {
+			levelChangeReady = levelIndex;
+		}
+	}
 
 	if (DEBUG_DRAW && levelImage) {
 		// showCollisionMap();
@@ -853,7 +862,6 @@ function init(system, options) {
 	sendEvent("init");
 
 	initGame();
-	loadLevel();
 
 	// 60 ticks per second
 	PS.timerStart(1, engineTick);

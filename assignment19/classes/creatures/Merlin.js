@@ -16,7 +16,9 @@ class Merlin extends GameObject {
 		player = this;
 		cameraTarget = this;
 		this.stunned = 0;
-		this.health = 2;
+
+		// Used to prevent bunny-hopping
+		this.jumped = false;
 
 		this.touchingAltar = true; // Currently touching altar
 		this.touchedAltar = false; // Touched altar last frame
@@ -72,7 +74,13 @@ class Merlin extends GameObject {
 					// On ground or standing on something
 					this.yVel = 0;
 					if (controls.up || controls.space) {
-						this.yVel = -1;
+						if (!this.jumped) {
+							this.jumped = true;
+							this.yVel = -1;
+							this.move(0, -1);
+						}
+					} else {
+						this.jumped = false;
 					}
 				}
 			}
