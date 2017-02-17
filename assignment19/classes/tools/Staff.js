@@ -30,7 +30,7 @@ class Staff extends Tool {
 				controls.mouseY + camera.y - HEIGHT/2 - 3 - this.target.y);
 			if (Math.abs(this.target.x + 2 - (controls.mouseX + camera.x - WIDTH/2)) > 2 ||
 				Math.abs(this.target.y + 2 - (controls.mouseY + camera.y - HEIGHT/2)) > 2) {
-				this.drop();
+				this._drop();
 			}
 		}
 	}
@@ -38,27 +38,27 @@ class Staff extends Tool {
 	cast (targets) {
 		if (this.target == null) {
 			for (var obj of Object.keys(targets)) {
-				if (targets[obj] && targets[obj].type == "box") {
+				if (targets[obj] && targets[obj].staffLift) {
 					this.target = targets[obj];
-					this.target.image = SPRITE_DATA.box_active;
+					this.target.staffLift();
 					this.image = SPRITE_DATA.staff_active;
 					return;
 				}
 			}
 		} else {
-			this.drop();
+			this._drop();
 		}
 	}
 
-	drop() {
+	_drop() {
 		if (this.target) {
-			this.target.image = SPRITE_DATA.box;
+			this.target.staffDrop();
 			this.image = SPRITE_DATA.staff;
 			this.target = null;
 		}
 	}
 
 	release() {
-		this.drop();
+		this._drop();
 	}
 }

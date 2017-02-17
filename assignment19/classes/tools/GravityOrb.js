@@ -15,8 +15,8 @@ class GravityOrb extends Tool {
 
 		this.altarImage = SPRITE_DATA.altar_orb
 		this.statusText = [
-			"Whoa, a mysterious orb!",
-			"Aaaaaaaa!"
+			"¡ɥɥHHHɐɐɐɐɐɐ∀∀",
+			"What a mysterious orb!",
 		];
 
 		this.handOffsetX = -1

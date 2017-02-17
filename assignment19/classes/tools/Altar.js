@@ -14,6 +14,10 @@ class Altar extends GameObject {
 		this.heightOffset = 10;
 		this.height = 1;
 
+		if (!this.image) {
+			this.image = SPRITE_DATA.altar;
+		}
+
 		this.tool = params.tool;
 	}
 

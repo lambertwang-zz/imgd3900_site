@@ -64,6 +64,7 @@ class GameObject {
 		this.spriteXInverted = false;
 		// Mirrored along Y
 		this.spriteYInverted = false;
+		this.opacity = 1;
 
 		/** End of user settable parameters */
 		if (objectData) {
@@ -110,7 +111,8 @@ class GameObject {
 			solid: this.solid,
 			dontRegenerate: this.dontRegenerate,
 			spriteXInverted: this.spriteXInverted,
-			spriteYInverted: this.spriteYInverted
+			spriteYInverted: this.spriteYInverted,
+			opacity: this.opacity
 		}
 	}
 
@@ -169,9 +171,6 @@ class GameObject {
 		if (this.ephemeral || !this.boundingBox) {
 			return;
 		}
-		if (this.boundingBox.bot - this.boundingBox.top + 2 <= 1) {
-			console.log(this.boundingBox.bot - this.boundingBox.top + 2);
-		}
 		// Compute collision bounding box
 		var collisions = checkCollision(
 			this.boundingBox.left - 1,
@@ -203,7 +202,8 @@ class GameObject {
 				drawXLoc, drawYLoc,
 				this.image.width * this.frameIndex, 0, 
 				this.image.width, this.image.height,
-				this.spriteXInverted, this.spriteYInverted
+				this.spriteXInverted, this.spriteYInverted,
+				this.opacity
 			);
 			this.frameStep++;
 			if (this.frameStep > this.frameSpeed) {
@@ -216,7 +216,8 @@ class GameObject {
 				drawXLoc, drawYLoc,
 				0, 0,
 				this.image.width, this.image.height,
-				this.spriteXInverted, this.spriteYInverted
+				this.spriteXInverted, this.spriteYInverted,
+				this.opacity
 			);
 		}
 	}
@@ -331,6 +332,7 @@ var STYLE = {
 	BACKGROUND_COLOR: [0, 0, 0],
 	WALL_COLOR: [255, 255, 255],
 	STATUS_COLOR: PS.COLOR_WHITE,
+	STATUS_DELAY: 2000
 }
 
 /**
@@ -347,6 +349,9 @@ var STYLE = {
  * 		system
  * 		options
  * 	shutdown
+ * 
+ * camera
+ * 		sent after attempting to move the camera to the target
  */
 var globalEventListener = {}
 
@@ -399,14 +404,14 @@ function getPixel(x, y) {
 	return pixels.slice(indexOffset, indexOffset + 3);
 };
 
-function drawPixel(color, x, y) {
+function drawPixel(color, x, y, opacity = 1) {
 	if (x < 0 || x >= WIDTH ||
 		y < 0 || y >= HEIGHT) {
 		console.log("drawPixel: Pixel out of range: (" + x + ", " + y + ")");
 		return;
 	}
 	var newPixel = getPixel(x, y);
-	var alpha = color.length > 3 ? Math.min(color[3], 255) / 255 : 1;
+	var alpha = color.length > 3 ? (Math.min(color[3], 255) * opacity) / 255 : 1;
 
 	var alpha_i = (1 - alpha);
 	// Alpha compositing
@@ -421,7 +426,8 @@ function imageBlit(
 	image, screenX, screenY,
 	imageX = 0, imageY = 0,
 	imageWidth = Infinity, imageHeight = Infinity,
-	invertX = false, invertY = false) {
+	invertX = false, invertY = false,
+	opacity = 1) {
 
 	if (image.pixelSize < 3) {
 		console.log("Error: imageBlit() requires at least 3 channels");
@@ -446,7 +452,8 @@ function imageBlit(
 			imageDataIndex = (i + j * image.width) * image.pixelSize;
 			drawPixel(
 				image.data.slice(imageDataIndex, imageDataIndex + image.pixelSize),
-				pixel_x, pixel_y);
+				pixel_x, pixel_y,
+				opacity);
 		}
 	}
 };
@@ -633,7 +640,7 @@ function showStatus(textList, i=0) {
 		return;
 	}
 	clearTimeout(textTimeout);
-	textTimeout = setTimeout(showStatus.bind(null, textList, i+1), 2000);
+	textTimeout = setTimeout(showStatus.bind(null, textList, i+1), STYLE.STATUS_DELAY);
 }
 
 /**
@@ -716,6 +723,7 @@ function engineTick() {
 			camera.x = cameraTarget.x + Math.floor(cameraTarget.width / 2);
 			camera.y = cameraTarget.y + Math.floor(cameraTarget.height / 2);
 		}
+		sendEvent("camera");
 
 		// Render level and objects
 		drawLevel();

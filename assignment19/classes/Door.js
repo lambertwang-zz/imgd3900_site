@@ -17,7 +17,6 @@ class Door extends GameObject {
 		this.width = 2;
 		this.widthOffset = 2;
 
-		console.log("Setting door target: " + params.levelTarget);
 		if (params.levelTarget) {
 			this.levelTarget = params.levelTarget;
 		} else {

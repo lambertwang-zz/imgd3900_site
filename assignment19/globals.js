@@ -27,13 +27,14 @@ var levelFade = 0;
 var player = null;
 var playerData = {
 	tool: null,
-	alt_tool: null
+	alt_tool: null,
+	hasKnowledge: false
 }
 var DB_NAME = "merlin_telemetry";
 
 globalEventListener["init"] = function() {
 	// Initialize Database
-	PS.dbInit(DB_NAME, { login : false });
+	PS.dbInit(DB_NAME);
 }
 
 globalEventListener["shutdown"] = function() {

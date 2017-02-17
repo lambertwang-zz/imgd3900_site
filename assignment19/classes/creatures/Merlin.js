@@ -26,6 +26,7 @@ class Merlin extends GameObject {
 
 		this.tool = null;
 		this.alt_tool = null;
+		this.spriteYInverted = false;
 
 		if (playerData.tool) {
 			console.log("Saving tool from last level");
@@ -82,6 +83,7 @@ class Merlin extends GameObject {
 				}
 			}
 		} else {
+			this.image = SPRITE_DATA.merlin;
 			this.stunned--;
 		}
 
@@ -131,6 +133,10 @@ class Merlin extends GameObject {
 
 	pickup(altar) {
 		var temp = this.tool;
+		if (temp) {
+			// Release first
+			temp.release();
+		}
 		if (altar.tool) {
 			this.tool = new altar.tool();
 			PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
@@ -139,7 +145,6 @@ class Merlin extends GameObject {
 			this.tool = null;
 		}
 		if (temp) {
-			temp.release();
 			altar.image = temp.altarImage;
 			altar.tool = temp.constructor;
 			objectDeletionQueue[temp.id] = temp;
