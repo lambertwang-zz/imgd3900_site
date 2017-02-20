@@ -39,6 +39,7 @@ class Merlin extends GameObject {
 		}
 
 		this.eventListeners["touch"] = this.magic;
+		this.eventListeners["camera"] = this.camera;
 	}
 
 	tick() {
@@ -70,7 +71,7 @@ class Merlin extends GameObject {
 
 			// If there is no tool or tool has no jump effect, then do normal jump
 			if (!this.tool || (this.tool && !this.tool.jump.apply(this))) {
-				if (Object.keys(this.ground).length > 0) {
+				if (this.ground.solid) {
 					// On ground or standing on something
 					this.yVel = 0;
 					if (controls.up || controls.space) {
@@ -97,7 +98,7 @@ class Merlin extends GameObject {
 
 		// If there is no tool or tool has no gravity effect, then do normal gravity
 		if (!this.tool || (this.tool && !this.tool.gravity.apply(this))) {
-			if (Object.keys(this.ground).length <= 0) {
+			if (!this.ground.solid) {
 				// In air
 				this.yVel += 0.07;
 				if (this.yVel > 1) {
@@ -148,7 +149,10 @@ class Merlin extends GameObject {
 		if (altar.tool) {
 			this.tool = new altar.tool();
 			PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
-			showStatus(this.tool.statusText);
+			if (!playerData[this.tool.type]) {
+				showStatus(this.tool.statusText);
+				playerData[this.tool.type] = true;
+			}
 		} else {
 			this.tool = null;
 		}
@@ -159,6 +163,14 @@ class Merlin extends GameObject {
 		} else {
 			altar.image = SPRITE_DATA.altar;
 			altar.tool = null;
+		}
+	}
+
+	camera() {
+		if (this.spriteYInverted) {
+			camera.y += 6;
+		} else {
+			camera.y -= 6;
 		}
 	}
 }

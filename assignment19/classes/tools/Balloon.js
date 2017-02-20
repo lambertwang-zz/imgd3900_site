@@ -33,7 +33,7 @@ class Balloon extends Tool {
 	}
 
 	jump() {
-		if (Object.keys(this.ground).length > 0) {
+		if (this.ground.solid) {
 			// On ground or standing on something
 			this.yVel = 0;
 			if (controls.up || controls.space) {
@@ -50,7 +50,7 @@ class Balloon extends Tool {
 	}
 
 	gravity() {
-		if (Object.keys(this.ground).length <= 0) {
+		if (!this.ground.solid) {
 			// In air
 			this.yVel += 0.05;
 			if (!controls.down && this.yVel > 0.1) {

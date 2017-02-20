@@ -44,7 +44,7 @@ class GameObject {
 		// If true does not have any collision map
 		this.ephemeral = false;
 		// If true cannot move through other objects
-		this.solid = false;
+		this.solid = true;
 
 		// If true, does not carry over between levels
 		/**
@@ -239,11 +239,12 @@ class GameObject {
 			this.yStep = 0;
 		}
 		var stopped = false;
+		var edge = null;
 		this.xStep += d_x;
 		this.yStep += d_y;
 		while (this.xStep > 1) {
-			var edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
-			if (Object.keys(edge).length > 0 || this.x + this.width >= levelImage.width) {
+			edge = checkCollision(this.boundingBox.right, this.boundingBox.top, 1, this.height);
+			if (edge.solid || this.x + this.width >= levelImage.width) {
 				this.xStep = 0;
 				this.xVel = 0;
 				stopped = true;
@@ -254,8 +255,8 @@ class GameObject {
 			}
 		}
 		while (this.xStep < -1) {
-			var edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
-			if (Object.keys(edge).length > 0 || this.x <= 0) {
+			edge = checkCollision(this.boundingBox.left - 1, this.boundingBox.top, 1, this.height);
+			if (edge.solid || this.x <= 0) {
 				this.xStep = 0;
 				this.xVel = 0;
 				stopped = true;
@@ -266,8 +267,8 @@ class GameObject {
 			}
 		}
 		while (this.yStep > 1) {
-			var edge = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
-			if (Object.keys(edge).length > 0 || this.y + this.height >= levelImage.height) {
+			edge = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
+			if (edge.solid || this.y + this.height >= levelImage.height) {
 				this.yStep = 0;
 				this.yVel = 0;
 				stopped = true;
@@ -278,8 +279,8 @@ class GameObject {
 			}
 		}
 		while (this.yStep < -1) {
-			var edge = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
-			if (Object.keys(edge).length > 0 || this.y <= 0) {
+			edge = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
+			if (edge.solid || this.y <= 0) {
 				this.yStep = 0;
 				this.yVel = 0;
 				stopped = true;
@@ -657,11 +658,14 @@ function showStatus(textList, i=0) {
  * Uses world coordinates
  */
 function checkCollision(x, y, width = 0, height = 0) {
-	var collidedWith = {};
+	var collidedWith = { solid: false };
 	for (var i = Math.max(x, 0); i < Math.min(x + width, levelImage.width); i++) {
 		for (var j = Math.max(y, 0); j < Math.min(y + height, levelImage.height); j++) {
 			for (var id of Object.keys(objectCollisionMap[i + j * levelImage.width])) {
 				collidedWith[id] = objects[id];
+				if ((objects[id] && objects[id].solid) || id == -1) {
+					collidedWith.solid = true;
+				}
 			}
 		}
 	}

@@ -6,8 +6,8 @@
 
 /** Class scripting */
 class Troll extends GameObject {
-	constructor(objectData) {
-		super(objectData);
+	constructor(params) {
+		super(params);
 		this.type = "troll";
 		this.altitude = 2;
 		this.image = SPRITE_DATA.troll;
@@ -18,8 +18,23 @@ class Troll extends GameObject {
 		this.widthOffset = 0;
 		this.heightOffset = 1;
 
-		this.homeX = this.x;
-		this.homeY = this.y;
+		if (!params.homeX) {
+			this.homeX = this.x;
+			this.homeY = this.y;
+		} else {
+			this.homeX = params.homeX;
+			this.homeY = params.homeY;
+			this.x = this.homeX;
+			this.y = this.homeY;
+		}
+	}
+
+	spawnParams() {
+		var ret = super.spawnParams();
+		ret.homeX = this.homeX;
+		ret.homeY = this.homeY;
+
+		return ret;
 	}
 
 	tick() {
@@ -51,12 +66,11 @@ class Troll extends GameObject {
 				this.xVel = 0.2;
 				this.spriteXInverted = false;
 			}
-			if (Object.keys(ground).length > 0 && edge && Object.keys(edge).length > 0) {
+			if (ground.solid && edge && edge.solid) {
 				// On ground or standing on something
 				this.yVel = -.5;
 			}
 		} else if (Math.abs(this.x - this.homeX) >= 4) {
-			
 			var edge = null;
 			this.image = SPRITE_DATA.troll_walk;
 			if (this.x > this.homeX) {
@@ -68,19 +82,19 @@ class Troll extends GameObject {
 				this.xVel = 0.1;
 				this.spriteXInverted = false;
 			}
-			if (Object.keys(ground).length > 0 && edge && Object.keys(edge).length > 0) {
+			if (ground.solid && edge && edge.solid) {
 				// On ground or standing on something
 				this.yVel = -.5;
 			}
 		} else {
 			this.xVel = 0.0;
-			if (Object.keys(ground).length > 0) {
+			if (ground.solid) {
 				// On ground or standing on something
 				this.yVel = 0;
 			}
 		}
 
-		if (Object.keys(ground).length <= 0) {
+		if (!ground.solid) {
 			// In air
 			this.yVel += 0.07;
 			if (this.yVel > 1) {

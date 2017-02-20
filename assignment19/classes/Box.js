@@ -26,7 +26,7 @@ class Box extends GameObject {
 		if (!this.spriteYInverted) {
 			var ground = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 1);
 
-			if (Object.keys(ground).length <= 0) {
+			if (!ground.solid) {
 				// In air
 				this.yVel += 0.07;
 				if (this.yVel > 1) {
@@ -43,7 +43,7 @@ class Box extends GameObject {
 		} else {
 			var ceil = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
 
-			if (Object.keys(ceil).length <= 0) {
+			if (!ceil.solid) {
 				// In air
 				this.yVel -= 0.07;
 				if (this.yVel < -1) {

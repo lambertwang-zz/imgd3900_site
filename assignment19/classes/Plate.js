@@ -23,7 +23,7 @@ class Plate extends GameObject {
 		if (!this.boundingBox) {
 			return;
 		}
-		var top = {};
+		var top = null;
 		if (this.spriteYInverted) {
 			// Check for things on top
 			top = checkCollision(this.boundingBox.left, this.boundingBox.bot, this.width, 2);
@@ -31,7 +31,7 @@ class Plate extends GameObject {
 			// Check for things on top
 			top = checkCollision(this.boundingBox.left, this.boundingBox.top - 2, this.width, 2);
 		}
-		if (Object.keys(top).length > 0) {
+		if (top.solid) {
 			if (++this.pressTime >= this.pressThreshold) {
 				if (!this.pressed) {
 					sendEvent("plate_pressed");

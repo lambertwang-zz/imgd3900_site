@@ -27,7 +27,7 @@ class GravityOrb extends Tool {
 
 	jump() {
 		var ceil = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
-		if (Object.keys(ceil).length > 0) {
+		if (ceil.solid) {
 			// On ground or standing on something
 			this.yVel = 0;
 			if (controls.up || controls.space) {
@@ -45,7 +45,7 @@ class GravityOrb extends Tool {
 
 	gravity() {
 		var ceil = checkCollision(this.boundingBox.left, this.boundingBox.top - 1, this.width, 1);
-		if (Object.keys(ceil).length <= 0) {
+		if (!ceil.solid) {
 			// In air
 			this.yVel -= 0.07;
 			if (!controls.down && this.yVel < -1) {
