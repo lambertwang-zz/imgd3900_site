@@ -95,9 +95,7 @@ globalEventListener["afterRenderAll"] = function() {
 				drawPixel([0, 0, 0, levelFade], i, j);
 			}
 		}
-		if (!controls.paused) {
-			levelFade -= STYLE.OVERLAY_FADE_RATE;
-		}
+		levelFade -= STYLE.OVERLAY_FADE_RATE;
 	}
 }
 
