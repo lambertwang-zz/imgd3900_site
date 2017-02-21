@@ -4,7 +4,7 @@
 /*jslint nomen: true, white: true */
 /*global PS */
 
-/** 
+/**
  * GlassForge engine
  * Object & event driven engine with basic class, event, and level scripting for Perlenspiel 3.2
  * Authors: Joseph (jctblackman@wpi.edu) and Lambert (lwang5@wpi.edu)
@@ -28,7 +28,7 @@ var MAX_ALT = 4;
 class GameObject {
 	constructor(objectData) {
 		/** Start User settable parameters */
-		
+
 		// String identifier for object
 		this.type = null;
 
@@ -59,7 +59,7 @@ class GameObject {
 		 */
 		this.altitude = 0;
 
-		
+
 		// Mirrored along X
 		this.spriteXInverted = false;
 		// Mirrored along Y
@@ -204,7 +204,7 @@ class GameObject {
 			imageBlit(
 				this.image.imageData,
 				drawXLoc, drawYLoc,
-				this.image.width * this.frameIndex, 0, 
+				this.image.width * this.frameIndex, 0,
 				this.image.width, this.image.height,
 				this.spriteXInverted, this.spriteYInverted,
 				this.opacity
@@ -329,7 +329,7 @@ var LEVEL_DIR = "levels/";
 var LEVEL_DATA = [];
 
 /**
- * 
+ *
  */
 var OBJECT_DATA = {};
 
@@ -350,7 +350,7 @@ var STYLE = {
  * 	afterLoadLevel
  * 	afterRenderAll
  * 	debug
- * 
+ *
  * 	touch
  * 		x: int
  * 		y: int
@@ -358,7 +358,7 @@ var STYLE = {
  * 		system
  * 		options
  * 	shutdown
- * 
+ *
  * camera
  * 		sent after attempting to move the camera to the target
  */
@@ -390,7 +390,7 @@ function sendEvent(type, params = []) {
 
 // Sounds created using http://www.bfxr.net/ available under the Apache 2.0 License
 
-/** 
+/**
  * Rendering Pipeline
  * A rendering layer on top of Perlenspiel's drawing functions.
  * Does not circumvent the perlenspiel engine to draw and manipulate beads.
@@ -593,7 +593,7 @@ function onLevelImageLoaded(image) {
 				}
 
 				var newObjParams = {
-					x: i % image.width, 
+					x: i % image.width,
 					y: Math.floor(i / image.width)
 				};
 				var newObj = null;
@@ -608,11 +608,11 @@ function onLevelImageLoaded(image) {
 
 				if (newObj) {
 					console.log(
-						"LevelLoad: Placing " + newObj.type + 
+						"LevelLoad: Placing " + newObj.type +
 						" at", newObjParams.x, newObjParams.y);
 				} else {
 					console.log(
-						"LevelLoad: Unrecognized object token " + levelImage.data[i * 4 + 1] + 
+						"LevelLoad: Unrecognized object token " + levelImage.data[i * 4 + 1] +
 						" at", newObjParams.x, newObjParams.y);
 				}
 			}
@@ -645,10 +645,10 @@ var textTimeout;
 function showStatus(textList, i=0) {
 	PS.statusText(textList[i]);
 	if (i == textList.length-1) {
-		// Just showed the last text, exit
+		// Just showed the last text, clear status line on a delay and exit
+		setTimeout(PS.statusText.bind(null, ""), STYLE.STATUS_DELAY*2);
 		return;
 	}
-	clearTimeout(textTimeout);
 	textTimeout = setTimeout(showStatus.bind(null, textList, i+1), STYLE.STATUS_DELAY);
 }
 
