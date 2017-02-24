@@ -151,6 +151,15 @@ class GameObject {
 	}
 
 	computeBoundingBox() {
+		if (this.ephemeral || !this.image) {
+			this.boundingBox = {
+				left: 0,
+				right: 0,
+				top: 0,
+				bottom: 0,
+			}
+			return;
+		}
 		this.offsetWidthEff = (this.spriteXInverted ? (this.image.width - this.widthOffset - this.width) : this.widthOffset);
 		this.offsetHeightEff = (this.spriteYInverted ? (this.image.height - this.heightOffset - this.height) : this.heightOffset);
 
@@ -231,6 +240,7 @@ class GameObject {
 	}
 
 	move(d_x, d_y) {
+		this.computeBoundingBox();
 		// Reset step to 0 if direction changed
 		if (this.xStep * d_x < 0) {
 			this.xStep = 0;
