@@ -148,7 +148,9 @@ class Merlin extends GameObject {
 		}
 		if (altar.tool) {
 			this.tool = new altar.tool();
-			PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
+			if (PS.dbValid(DB_NAME)) {
+				PS.dbEvent(DB_NAME, "tool_gained", this.tool.type);
+			}
 			if (!playerData[this.tool.type]) {
 				showStatus(this.tool.statusText);
 				playerData[this.tool.type] = true;

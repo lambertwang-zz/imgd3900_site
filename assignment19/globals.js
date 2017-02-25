@@ -45,6 +45,9 @@ globalEventListener["init"] = function() {
 }
 
 globalEventListener["shutdown"] = function() {
+	if (!PS.dbValid(DB_NAME)) {
+		return;
+	}
 	// Only dbSend if hosted, not locally testing
 	if (window.location.hostname == "users.wpi.edu") {
 		PS.dbSend(DB_NAME, "lwang5");
@@ -55,7 +58,10 @@ globalEventListener["shutdown"] = function() {
 
 /** Set global event listeners */
 globalEventListener["beforeLoadLevel"] = function() {
-	PS.dbEvent(DB_NAME, "level_loaded", levelIndex);
+
+	if (PS.dbValid(DB_NAME)) {
+		PS.dbEvent(DB_NAME, "level_loaded", levelIndex);
+	}
 
 	// Pause game and setup level fading
 	controls.paused = true;

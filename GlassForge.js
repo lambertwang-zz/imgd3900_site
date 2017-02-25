@@ -817,6 +817,7 @@ function keyDown(key) {
 		case 32:
 			controls.space = true;
 			break;
+/*
 		case PS.KEY_F1:
 			DEBUG_DRAW = !DEBUG_DRAW;
 			break;
@@ -830,6 +831,7 @@ function keyDown(key) {
 			levelChangeReady = levelIndex - 1;
 			sendEvent("debug");
 			break;
+*/
 	}
 }
 
